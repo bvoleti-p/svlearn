@@ -39,5 +39,6 @@ setuptools.setup(
 		'IPython',
 		'missingno',
 		'category_encoders',
+		'tensorflow'
 	],
 )

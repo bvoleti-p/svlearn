@@ -10,3 +10,4 @@ keras
 IPython
 missingno
 category_encoders
+tensorflow
