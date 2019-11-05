@@ -26,3 +26,8 @@ Usage
 	utils.about_dataframe(df)
 	
 Documentation
+
+[https://svlearn.readthedocs.io/en/latest/](https://svlearn.readthedocs.io/en/latest/)
+
+pypi Project URL
+[https://pypi.org/project/svlearn/](https://pypi.org/project/svlearn/)
