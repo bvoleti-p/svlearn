@@ -2,10 +2,6 @@
 
 This module wraps boilerplate code used to perform routine ML related tasks
 
-Author: bvoleti-p
-
-License: BSD-3-Clause https://opensource.org/licenses/BSD-3-Clause
-
 """
 
 import numpy as np
