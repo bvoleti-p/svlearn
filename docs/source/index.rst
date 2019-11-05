@@ -30,6 +30,10 @@ Usage::
 	from svlearn import utils
 	df = pd.read_csv("test.csv")
 	utils.about_dataframe(df)
+
+Github
+
+https://github.com/bvoleti-p/svlearn
 	
 Documentation
 
