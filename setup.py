@@ -12,7 +12,7 @@ setuptools.setup(
     name="svlearn",
     version="0.0.3.dev1",
     author="bvoleti-p",
-    author_email="bvoleti99@gmail.com",
+    author_email="",
     description="Utils for ML",
     long_description=long_description,
     long_description_content_type="text/markdown",

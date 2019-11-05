@@ -2,9 +2,7 @@
 
 This module wraps boilerplate code used to perform routine ML related tasks
 
-Oct 2019
-
-Author: bvoleti-p <bvoleti99@gmail.com>
+Author: bvoleti-p
 
 License: BSD-3-Clause https://opensource.org/licenses/BSD-3-Clause
 
