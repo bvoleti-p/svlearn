@@ -8,6 +8,11 @@ Documentation for svlearn package
 
 Click :doc:`here </utils>` for list of all functions in Utils module
 
+Main dependencies: numpy, pandas, sklearn, matplotlib, seaborn, statsmodels, 
+keras, category_encoders, IPython
+
+Utils primarily is a wrapper for ML tasks performed using the above packages
+
 Installation::
 
 	pip install svlearn==version

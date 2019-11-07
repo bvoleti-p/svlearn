@@ -1,7 +1,5 @@
 """Utils for ML
 
-This module wraps boilerplate code used to perform routine ML related tasks
-
 """
 
 import numpy as np
@@ -84,18 +82,20 @@ import category_encoders
 __PRINT = 'PRINT'
 __HTML = 'HTML'
 
+__line_to_print = "________________________________________"
+
 def print_separator():
 	"""Prints a separator line using 80 underscores
 	
     """
 	
-	print_new_line
-	display_func("________________________________________________________________________________", mode=__PRINT)
+	print_new_line()
+	display_func(__line_to_print + __line_to_print, mode=__PRINT)
 	print_new_line()
 
 def display_func(value_to_print, mode=None):
-	"""Display or Print an object or string based on `mode` using `IPython.display` or using `print`
-	
+	"""Display or Print an object or string
+		
 	Args:
 		value_to_print (Union[str, object]): Value to print
 		mode (str): `PRINT` will use `print(value_to_print)`
@@ -118,7 +118,7 @@ def print_new_line():
 	
 	display_func("", mode=__PRINT)
 
-def get_data_from_array(data_array, columns):
+def get_dataframe_from_array(data_array, columns):
 	"""Convert ndarray to pd.DataFrame for the given list of columns
 	
     Args:
@@ -139,7 +139,7 @@ def about_dataframe(df):
 	"""Describe DataFrame and show it's information
 	
     Args:
-		df (pd.DataFrame): DataFrame on which describe and info is to be called
+		df (pd.DataFrame): DataFrame to describe and info
 		
     """
 	
@@ -169,7 +169,10 @@ def null_values_info(df):
 		num_of_columns_with_null = 0
 		for idx, each_feature in enumerate(sorted(df_null_values_sum.keys())):
 			if(df_null_values_sum.loc[each_feature] > 0):
-				html_to_display = html_to_display + "<td>" + each_feature + "</td>" + "<td>" + str(df_null_values_sum.loc[each_feature]) + "</td>"
+				html_to_display = (html_to_display + "<td>" + each_feature + 
+					"</td>" + "<td>" +
+					str(df_null_values_sum.loc[each_feature]) + 
+					"</td>")
 				num_of_columns_with_null = num_of_columns_with_null + 1
 			if(num_of_columns_with_null%4 == 0):
 				html_to_display = html_to_display + "</tr><tr>"
@@ -181,39 +184,53 @@ def null_values_info(df):
 	print_separator()
 
 def fill_null_values(df, column, value, row_index):
-	"""Fill null values in a dataframe column. Prints out number of rows updated with the new value.
+	"""Fill null values in a dataframe column
 	
     Args:
 		df (pd.DataFrame): DataFrame that will be updated
 		column (str): Column in the target dataframe that will be updated
-		value: (Union[int, str, object]): New value that will replace null values
-		row_index (Union[Index, array-like]): Index of rows that should be updated
+		value: (Union[int, str, object]): New value that will replace 
+			null values
+		row_index (Union[Index, array-like]): Index of rows to be updated
 		
     """
 	
 	num_of_rows = row_index.shape[0]
 	
 	df.iloc[row_index, df.columns.get_loc(column)] = value
-	display_func("{0:d} rows updated for '".format(num_of_rows) + column + "' with '" + str(value) + "'", mode=__PRINT)
+	display_func("{0:d} rows updated for '".format(num_of_rows) + column 
+					+ "' with '" + str(value) + "'", mode=__PRINT)
 
 def columns_info(df, cat_count_threshold, show_group_counts=False):
 	"""Prints and returns column info for a given dataframe
 	
     Args:
 		df (pd.DataFrame): DataFrame
-		cat_count_threshold (int): If a column in the dataframe has unique value count less than this threshold then it will be assumed 'categorical'
-		show_group_counts (boolean): If True then prints the individual group counts for each column
-		
+		cat_count_threshold (int): If a column in the dataframe 
+			has unique value count less than this threshold then it 
+			will be tagged as 'categorical'
+		show_group_counts (boolean): If True then prints the individual 
+			group counts for each column
+	
+	Example:
+		`object_cat_cols, numeric_cat_cols, numeric_cols = utils.columns_info(
+			data, cat_count_threshold=5, show_group_counts = True)`
+	
     """
 	
 	if(cat_count_threshold is None):
 		cat_count_threshold = 10
 		
 	all_columns = df.columns
-	numeric_cat_columns = sorted(df._get_numeric_data().columns) ## https://stackoverflow.com/questions/29803093/check-which-columns-in-dataframe-are-categorical
-	object_cat_columns = sorted(list(set(all_columns) - set(numeric_cat_columns)))
+	numeric_cat_columns = sorted(df._get_numeric_data().columns) 
+	# https://stackoverflow.com/questions/29803093/
+	# check-which-columns-in-dataframe-are-categorical
+	object_cat_columns = sorted(list(set(all_columns) 
+							- set(numeric_cat_columns)))
 	
-	display_func("-> Columns will be tagged as categorical if number of categories are less than or equal to " + str(cat_count_threshold), mode=__PRINT)
+	display_func("-> Columns will be tagged as categorical if number " + 
+					" of categories are less than or equal to " + 
+					str(cat_count_threshold), mode=__PRINT)
 	print_separator()
 	
 	kount = 0
@@ -224,8 +241,11 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 	for object_column in object_cat_columns:
 		if(df[object_column].unique().shape[0] <= cat_count_threshold):
 			if(show_group_counts):
-				to_print_detail = to_print_detail + str(df.groupby(object_column)[object_column].count())
-				to_print_detail = to_print_detail + "\n" + "\n________________________________________\n\n"
+				to_print_detail = ( to_print_detail + 
+					str(df.groupby(object_column)[object_column].count()) )
+				to_print_detail = ( to_print_detail + 
+					"\n" + 
+					"\n________________________________________\n\n" )
 			kount += 1
 			selected_object_cat_columns.append(object_column)
 		else:
@@ -240,7 +260,9 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 		print_separator()
 	
 	if(len(object_columns_not_identified_as_category) > 0):
-		display_func("-> Count of 'object' type non categorical columns: " + str(len(object_columns_not_identified_as_category)) + "\n", mode=__PRINT)
+		display_func("-> Count of 'object' type non categorical columns: " + 
+			str(len(object_columns_not_identified_as_category)) + 
+			"\n", mode=__PRINT)
 		display_func(object_columns_not_identified_as_category)
 		print_new_line()
 		print_separator()
@@ -254,7 +276,8 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 		if(df[numeric_column].unique().shape[0] <= cat_count_threshold):
 			if(show_group_counts):
 				to_print_detail = to_print_detail + str(df.groupby(numeric_column)[numeric_column].count())
-				to_print_detail = to_print_detail + "\n" + "\n________________________________________\n\n"
+				to_print_detail = ( to_print_detail + "\n" + 
+					"\n" + __line_to_print + "\n\n" )
 			kount += 1
 			selected_numeric_cat_columns.append(numeric_column)
 		else:
@@ -269,15 +292,18 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 		print_separator()
 	
 	if(len(numeric_columns) > 0):
-		display_func("Count of 'numeric' type columns: {0:d}\n".format(len(numeric_columns)), mode=__PRINT)
+		display_func("Count of 'numeric' type columns: {0:d}\n".
+			format(len(numeric_columns)), mode=__PRINT)
 		display_func(numeric_columns, mode=__PRINT)
 		print_new_line()
 		print_separator()
 	
-	return selected_object_cat_columns, selected_numeric_cat_columns, numeric_columns
+	return (selected_object_cat_columns, 
+		selected_numeric_cat_columns, 
+		numeric_columns)
 
 def get_X_and_y(df, y_column):
-	"""Splits and returns dataframe as a tuple of X (predictors) and y (response)
+	"""Splits pd.dataframe into X (predictors) and y (response)
 	
     Args:
 		df (pd.DataFrame): DataFrame
@@ -292,59 +318,116 @@ def get_X_and_y(df, y_column):
 	X = df[[i for i in list(df.columns) if i != y_column]]
 	y = df[y_column]
 	
-	display_func("-> X set to " + ', '.join(df.columns[~df.columns.isin( [y_column] ) ] ) + "\n", mode=__PRINT)
+	display_func("-> X set to " + ', '.join(
+		df.columns[~df.columns.isin( [y_column] ) ] ) + "\n", mode=__PRINT)
 	display_func("-> y set to " + y_column, mode=__PRINT)
 	print_separator()
 	
 	return X, y
+
+def __get_plot_attrs(**kwargs):
+	if 'hue_column' not in kwargs:
+		kwargs['hue_column'] = None
 	
-def count_plots(df, columns, args, hue_column=None, split_plots_by=None):
-	"""Count plots using Seaborn
+	if 'split_plots_by' not in kwargs:
+		kwargs['split_plots_by'] = None
+	
+	if 'height' not in kwargs:
+		kwargs['height'] = 4
+	
+	if 'aspect' not in kwargs:
+		kwargs['aspect'] = 1
+		
+	return ( kwargs['hue_column'], 
+		kwargs['split_plots_by'], 
+		kwargs['height'], 
+		kwargs['aspect'] )
+
+def count_plots(df, columns, **kwargs):
+	"""Count Plots using seaborn
 
     Display Count plots for the given columns in a DataFrame
 
     Args:
         df (pd.DataFrame): DataFrame
         columns (array-like): Columns for which count plot has to be shown
-		args (pd.Series): Description of arg2
-		hue_column (str, optional): Category Column for `hue`
-		split_plots_by (str, optional): Category Column to split the count plots, example: Gender
+		kwargs (dict of str): hue_column (for color)
+			split_plots_by (to split seaborn facetgrid by column such as Gender)
+			height (sets the height of plot)
+			aspect (determines the widht of the plot based on height)
+		
+	Example:
+		`utils.count_plots(data, object_cat_cols, height=4, aspect=1.5)`
 		
     """
+	
+	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	
+	columns = pd.Series(columns)
 	
 	i = 0
 	columns = columns[~columns.isin([hue_column, split_plots_by])]
 	for each_col in columns:
 		order=df.groupby(each_col)
 		display_func("Count Plot for: " + str(each_col), mode=__PRINT)
-		g = sns.catplot( x=each_col, hue=hue_column, col=split_plots_by, kind="count", data=df, order=order.indices.keys(), height=args.loc['height'], aspect=args.loc['aspect'] )
+		
+		g = sns.catplot( x=each_col, hue=hue_column, 
+			col=split_plots_by, kind="count", 
+			data=df, order=order.indices.keys(), 
+			height=height, aspect=aspect )
+			
 		g.set_xticklabels(rotation=40)
 		plt.show()
 		print_new_line()
-		# display(HTML("<input type='checkbox' id='" + each_col + "' value='" + each_col + "'>" + each_col + "<br />"))
+		# display(HTML("<input type='checkbox' id='" + each_col + 
+		# "' value='" + each_col + "'>" + each_col + "<br />"))
 		i = i + 1
 
-def count_compare_plots(df1, df1_title, df2, df2_title, column, args, hue_column=None, split_plots_by=None):
-	"""Summary line.
-
-    Extended description of function.
+def count_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
+	"""Show Count Plots of two DataFrames for comparision
+	
+	Can be used to compare how Fill NA affects the distribution of a column
 
     Args:
         
+	
+	Example:
+		The below example uses nhanes dataset.
 		
+		>>> for each_column in object_cat_columns:
+				data[each_column] = data[each_column].fillna(
+					data.groupby(['Gender'])[each_column].ffill())
+		>>> for each_column in object_cat_columns:
+		>>> 	str_count_of_nas = str(len(
+					data_raw.index[data_raw.isnull()[each_column]]))
+		>>> 	str_count_of_nas = ' (Count of NAs:' + str_count_of_nas + ')'
+		>>> 	utils.count_compare_plots(df1=data_raw, 
+				df1_title='Before Fill-NA' + str_count_of_nas, 
+					df2=data, 
+					df2_title='After Fill-NA', 
+					column=each_column, 
+					height=4, 
+					aspect=1.5, 
+					hue_column='Diabetes', 
+					split_plots_by='Gender')
+	
     """
+	
+	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
 	
 	display_func("Count Plot for: " + str(column), mode=__PRINT)
 	
 	f, axes = plt.subplots(2)
 
-	g = sns.catplot( x=column, hue=hue_column, col=split_plots_by, kind="count", data=df1, height=args.loc['height'], aspect=args.loc['aspect'])
+	g = sns.catplot( x=column, hue=hue_column, col=split_plots_by, 
+		kind="count", data=df1, height=height, aspect=aspect )
 	g.set_xticklabels(rotation=40)
 	g.fig.suptitle(df1_title, fontsize=16)
 	
 	###
 
-	g = sns.catplot( x=column, hue=hue_column, col=split_plots_by, kind="count", data=df2, height=args.loc['height'], aspect=args.loc['aspect'])
+	g = sns.catplot( x=column, hue=hue_column, col=split_plots_by, 
+		kind="count", data=df2, height=height, aspect=aspect)
 	g.set_xticklabels(rotation=40)
 	g.fig.suptitle(df2_title, fontsize=16)
 	
@@ -354,7 +437,59 @@ def count_compare_plots(df1, df1_title, df2, df2_title, column, args, hue_column
 	plt.show()
 	print_new_line()
 
-def kde_plots(df, columns, args, hue_column=None, split_plots_by=None):
+def kde_plots(df, columns, **kwargs):
+	"""KDE Plots using seaborn
+	
+    Args:
+        df (pd.DataFrame): DataFrame
+        columns (array-like): Columns for which count plot has to be shown
+		kwargs (dict of str): hue_column (for color)
+			split_plots_by (split seaborn FacetGrid by column, ex: Gender)
+			height (sets the height of plot)
+			aspect (determines the widht of the plot based on height)
+	
+	Example:
+		`utils.kde_plots(data, numeric_cols, height=4, aspect=1.5, 
+			hue_column='class')`
+		
+    """
+	
+	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	
+	columns = pd.Series(columns)
+	
+	for each_col in columns:
+		display_func("KDE Plot for: " + str(each_col), mode=__PRINT)
+		
+		if(split_plots_by is None):
+			if(hue_column is None):
+				g = sns.FacetGrid(df[[each_col]], 
+					height=height, 
+					aspect=aspect)
+			else:
+				g = sns.FacetGrid(df[[each_col, hue_column]], 
+					hue=hue_column, 
+					height=height, 
+					aspect=aspect)
+		else:
+			if(hue_column is None):
+				g = sns.FacetGrid(df[[each_col, split_plots_by]], 
+					col=split_plots_by, 
+					height=height, 
+					aspect=aspect)
+			else:
+				g = sns.FacetGrid(df[[each_col, hue_column, split_plots_by]], 
+					hue=hue_column, 
+					col=split_plots_by, 
+					height=height,
+					aspect=aspect)
+					
+		g = (g.map(sns.distplot, each_col, hist=True))
+		g.add_legend()
+		plt.show()
+		print_new_line()
+
+def kde_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 	"""Summary line.
 
     Extended description of function.
@@ -364,41 +499,20 @@ def kde_plots(df, columns, args, hue_column=None, split_plots_by=None):
 		
     """
 	
-	for each_col in columns:
-		display_func("KDE Plot for: " + str(each_col), mode=__PRINT)
-		if(split_plots_by is None):
-			if(hue_column is None):
-				g = sns.FacetGrid(df[[each_col]], height=args.loc['height'], aspect=args.loc['aspect'])
-			else:
-				g = sns.FacetGrid(df[[each_col, hue_column]], hue=hue_column, height=args.loc['height'], aspect=args.loc['aspect'])
-		else:
-			if(hue_column is None):
-				g = sns.FacetGrid(df[[each_col, split_plots_by]], col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
-			else:
-				g = sns.FacetGrid(df[[each_col, hue_column, split_plots_by]], hue=hue_column, col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
-		g = (g.map(sns.distplot, each_col, hist=True))
-		g.add_legend()
-		plt.show()
-		print_new_line()
-
-def kde_compare_plots(df1, df1_title, df2, df2_title, column, args, hue_column=None, split_plots_by=None):
-	"""Summary line.
-
-    Extended description of function.
-
-    Args:
-        
-		
-    """
+	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
 	
 	display_func("Count Plot for: " + str(column), mode=__PRINT)
 	
 	f, axes = plt.subplots(2)
 	
 	if(split_plots_by is None):
-		g = sns.FacetGrid(df1[[column, hue_column]], hue=hue_column, col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
+		g = sns.FacetGrid(df1[[column, hue_column]], hue=hue_column, 
+			col=split_plots_by, height=height, 
+			aspect=aspect)
 	else:
-		g = sns.FacetGrid(df1[[column, hue_column, split_plots_by]], hue=hue_column, col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
+		g = sns.FacetGrid(df1[[column, hue_column, split_plots_by]], 
+			hue=hue_column, col=split_plots_by, height=height, 
+				aspect=aspect)
 	g = (g.map(sns.distplot, column, hist=True))
 	g.add_legend()
 	g.fig.suptitle(df1_title, fontsize=16)
@@ -406,9 +520,14 @@ def kde_compare_plots(df1, df1_title, df2, df2_title, column, args, hue_column=N
 	####
 	
 	if(split_plots_by is None):
-		g = sns.FacetGrid(df2[[column, hue_column]], hue=hue_column, col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
+		g = sns.FacetGrid(df2[[column, hue_column]], hue=hue_column, 
+			col=split_plots_by, height=height, 
+			aspect=aspect)
 	else:
-		g = sns.FacetGrid(df2[[column, hue_column, split_plots_by]], hue=hue_column, col=split_plots_by, height=args.loc['height'], aspect=args.loc['aspect'])
+		g = sns.FacetGrid(df2[[column, hue_column, split_plots_by]], 
+			hue=hue_column, col=split_plots_by, height=height, 
+			aspect=aspect)
+			
 	g = (g.map(sns.distplot, column, hist=True))
 	g.add_legend()
 	g.fig.suptitle(df2_title, fontsize=16)
@@ -445,25 +564,35 @@ def encode_columns(df, method, columns = []):
 		
 	for columnName in columns:
 		if(method == 'labelencoder'):
-			df[columnName] = label_encoder.fit_transform(df[columnName].astype(str))
-			display_func("-> Transformed X[" + columnName + "] using sklearn.LabelEncoder") 
+			df[columnName] = label_encoder.fit_transform(
+				df[columnName].astype(str))
+			display_func("-> Transformed X[" + columnName + 
+				"] using sklearn.LabelEncoder") 
 		elif(method == 'binary'):
 			lb_results = label_binarizer.fit_transform(df[columnName])
-			display_func("-> Transformed X[" + columnName + "] using sklearn.LabelBinarizer")
+			display_func("-> Transformed X[" + columnName + 
+				"] using sklearn.LabelBinarizer")
 			if(label_binarizer.y_type_ == 'multiclass'):
-				display_func("--> Type of target data is: " + label_binarizer.y_type_)
-				temp_df = pd.DataFrame(lb_results, columns = label_binarizer.classes_, index = df.index)
+				display_func("--> Type of target data is: " + 
+					label_binarizer.y_type_)
+				temp_df = pd.DataFrame(lb_results, 
+					columns = label_binarizer.classes_, index = df.index)
 				df = df.join(temp_df)
-				display_func("--> Added following columns to dataframe: " + str(label_binarizer.classes_))
+				display_func("--> Added following columns to dataframe: " + 
+					str(label_binarizer.classes_))
 		elif(method == 'onehot'):
 			ohe_results = one_hot_encoder.fit_transform(df[[columnName]])
-			display_func("-> Transformed X[" + columnName + "] using sklearn.OneHotEncoder.")
-			temp_df = pd.DataFrame(ohe_results, columns = one_hot_encoder.get_feature_names())
+			display_func("-> Transformed X[" + columnName + 
+				"] using sklearn.OneHotEncoder.")
+			temp_df = pd.DataFrame(ohe_results, 
+				columns = one_hot_encoder.get_feature_names())
 			df = pd.concat([df,temp_df],axis=1)
-			display_func("--> Added following columns to returned dataframe: " + str(one_hot_encoder.categories))
+			display_func("--> Added following columns to returned dataframe: " 
+				+ str(one_hot_encoder.categories))
 		elif(method == 'pd_dummies'):
 			df = pd.get_dummies(df, columns = columnName)
-			display_func("-> Transformed X[" + columnName + "] using pd.get_dummies.")
+			display_func("-> Transformed X[" + columnName + 
+				"] using pd.get_dummies.")
 		
 		kount = kount + 1
 		if(kount < len(columns)):
@@ -505,8 +634,10 @@ def do_feature_selection(X, y, method):
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
-		display_func("-> Selected Features using skbest.f_regression")
-		sf_data = {'Feature Name':selected_features.values, 'Score':skbest.scores_[mask]} 
+		display_func("-> Selected Features using skbest.f_regression", 
+			mode=__PRINT)
+		sf_data = {'Feature Name':selected_features.values, 
+			'Score':skbest.scores_[mask]} 
 		sf_df = pd.DataFrame(sf_data)
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		display_func(sf_df)
@@ -515,37 +646,45 @@ def do_feature_selection(X, y, method):
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
-		display_func("-> Selected Features using skbest.mutual_info_regression")
-		sf_data = {'Feature Name':selected_features.values, 'Score':skbest.scores_[mask]}
+		display_func("-> Selected Features using " + 
+			"skbest.mutual_info_regression", mode=__PRINT)
+		sf_data = {'Feature Name':selected_features.values, 
+			'Score':skbest.scores_[mask]}
 		sf_df = pd.DataFrame(sf_data)
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		display_func(sf_df)
 	elif(method == 'RandomForestRegressor'):
 		rf = RandomForestRegressor()
 		
-		X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+		X_train, X_test, y_train, y_test = train_test_split(X, y, 
+			random_state=42)
 		rf.fit(X_train, y_train)
 		
-		cv_results = cross_validate(rf, X, y, cv=5, 
+		cv_res = cross_validate(rf, X, y, cv=5, 
 									scoring=('r2', 'neg_mean_squared_error'), 
 									return_train_score=True,
 									return_estimator =True)
 									
-		best_test_r2_score_index = np.argmax(cv_results['test_r2'])
-		best_test_estimator = cv_results['estimator'][best_test_r2_score_index]
+		bst_tst_r2_idx = np.argmax(cv_res['test_r2'])
+		bst_tst_estimator = cv_res['estimator'][bst_tst_r2_idx]
 
-		feature_importances = pd.DataFrame(best_test_estimator.feature_importances_ ,
-										   index = X.columns,
-										   columns=['importance']).sort_values('importance', ascending=False)
-		display_func("-> Selected Features using Random Forest Regressor")
+		feature_importances = pd.DataFrame(
+			bst_tst_estimator.feature_importances_ ,
+			index = X.columns,
+			columns=['importance']).sort_values('importance', 
+				ascending=False)
+		display_func("-> Selected Features using Random Forest Regressor", 
+			mode=__PRINT)
 		display_func(feature_importances)
 	elif(method == 'f_classif'):
 		skbest = SelectKBest(f_classif, k=X.shape[1]).fit(X,y)
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
-		display_func("-> Selected Features using skbest.f_classif")
-		sf_data = {'Feature Name':selected_features.values, 'Score':skbest.scores_[mask]} 
+		display_func("-> Selected Features using skbest.f_classif", 
+			mode=__PRINT)
+		sf_data = {'Feature Name':selected_features.values, 
+			'Score':skbest.scores_[mask]} 
 		sf_df = pd.DataFrame(sf_data)
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		display_func(sf_df)
@@ -554,42 +693,56 @@ def do_feature_selection(X, y, method):
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
-		display_func("-> Selected Features using skbest.mutual_info_classif")
-		sf_data = {'Feature Name':selected_features.values, 'Score':skbest.scores_[mask]}
+		display_func("-> Selected Features using " + 
+			"skbest.mutual_info_classif", mode=__PRINT)
+		sf_data = {'Feature Name':selected_features.values, 
+		'Score':skbest.scores_[mask]}
 		sf_df = pd.DataFrame(sf_data)
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		display_func(sf_df)
 	elif(method == 'RandomForestClassifier'):
 		rf = RandomForestClassifier()
 		
-		X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+		X_train, X_test, y_train, y_test = train_test_split(X, y, 
+			random_state=42)
 		rf.fit(X_train, y_train)
 		
-		cv_results = cross_validate(rf, X, y, cv=5, 
+		cv_res = cross_validate(rf, X, y, cv=5, 
 									scoring=('r2', 'neg_mean_squared_error'), 
 									return_train_score=True,
 									return_estimator =True)
 									
-		best_test_r2_score_index = np.argmax(cv_results['test_r2'])
-		best_test_estimator = cv_results['estimator'][best_test_r2_score_index]
+		bst_tst_r2_idx = np.argmax(cv_res['test_r2'])
+		bst_tst_estimator = cv_res['estimator'][bst_tst_r2_idx]
 
-		feature_importances = pd.DataFrame(best_test_estimator.feature_importances_ ,
-										   index = X.columns,
-										   columns=['importance']).sort_values('importance', ascending=False)
-		display_func("-> Selected Features using Random Forest Classifier")
+		feature_importances = pd.DataFrame(
+			bst_tst_estimator.feature_importances_ ,
+			index = X.columns,
+			columns=['importance']).sort_values('importance', 
+				ascending=False)
+		display_func("-> Selected Features using Random Forest Classifier", 
+			mode=__PRINT)
 		display_func(feature_importances,mode=__PRINT)
 	
 	print_separator()
 
 
-def do_cross_validate(X, y, estimator_type, estimator, cv, args):
-	"""Summary line.
-
-    Extended description of function.
+def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
+	"""Cross Validate (sklearn)
 
     Args:
         
-		
+	Example:
+		cv_iterator = ShuffleSplit(n_splits=2, test_size=0.2, random_state=31)
+		cv_results = utils.do_cross_validate(X_train, 
+			y_train, 
+			'Classification', 
+			'DecisionTreeClassifier', 
+			cv=cv_iterator, 
+			kernel='rbf', 
+			C=1, 
+			gamma=0.01)
+	
     """
 	
 	estimator_name = estimator
@@ -602,16 +755,21 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, args):
 	elif(estimator == 'LDA'):
 			estimator = LinearDiscriminantAnalysis()
 	elif(estimator == 'SVC'):
-			estimator = SVC(kernel=args.loc['kernel'], C=args.loc['C'], gamma=args.loc['gamma'])
+			estimator = SVC(kernel=kwargs['kernel'], 
+				C=kwargs['C'], gamma=kwargs['gamma'])
 	elif(estimator == 'DecisionTreeClassifier'):
 			estimator = DecisionTreeClassifier()
 	elif(estimator == 'RandomForestClassifier'):
-			estimator = RandomForestClassifier(n_estimators=args.loc['n_estimators'], max_features=args.loc['max_features'], criterion=args.loc['criterion'])
+			estimator = RandomForestClassifier(
+				n_estimators=kwargs['n_estimators'], 
+				max_features=kwargs['max_features'], 
+				criterion=kwargs['criterion'])
 	elif(estimator == 'GradientBoostingClassifier'):
-			estimator = GradientBoostingClassifier( n_estimators=int(args.loc['n_estimators']), 
-													learning_rate=args.loc['learning_rate'], 
-													max_depth=args.loc['max_depth'], 
-													random_state=int(args.loc['random_state']) )
+			estimator = GradientBoostingClassifier( 
+				n_estimators=int(kwargs['n_estimators']), 
+				learning_rate=kwargs['learning_rate'], 
+				max_depth=kwargs['max_depth'], 
+				random_state=int(kwargs['random_state']) )
 	elif(estimator == 'LogisticRegression'):
 			estimator = LogisticRegression()
 	else:
@@ -623,34 +781,42 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, args):
 		return
 	
 	if(estimator_type == 'Regression'):
-		cv_results = cross_validate(estimator, X, y, cv=cv, 
-									scoring=('r2', 'neg_mean_squared_error'), 
-									return_train_score=True,
-									return_estimator =True)
+		cv_res = cross_validate(estimator, 
+			X, y, 
+			cv=cv, 
+			scoring=('r2', 'neg_mean_squared_error'), 
+			return_train_score=True, 
+			return_estimator=True)
 		
 		# train_r2		
-		best_train_r2_score_index = np.argmax(cv_results['train_r2'])
-		best_train_r2_score = cv_results['train_r2'][best_train_r2_score_index]
-		best_train_estimator = cv_results['estimator'][best_train_r2_score_index]
-		test_for_best_train_r2_score = cv_results['test_r2'][best_train_r2_score_index]
-		fit_time_for_best_train_r2_score = cv_results['fit_time'][best_train_r2_score_index]
-		score_time_for_best_train_r2_score = cv_results['score_time'][best_train_r2_score_index]
-		mean_train_r2_score = np.mean(cv_results['train_r2'])
+		bst_trn_r2_idx = np.argmax(cv_res['train_r2'])
+		bst_trn_r2 = cv_res['train_r2'][bst_trn_r2_idx]
+		bst_trn_estimator = cv_res['estimator'][bst_trn_r2_idx]
+		test_for_bst_trn_r2 = cv_res['test_r2'][bst_trn_r2_idx]
+		fit_time_for_bst_trn_r2 = cv_res['fit_time'][bst_trn_r2_idx]
+		score_time_for_bst_trn_r2 = cv_res['score_time'][bst_trn_r2_idx]
+		mean_train_r2_score = np.mean(cv_res['train_r2'])
 		
 		# test_r2
-		best_test_r2_score_index = np.argmax(cv_results['test_r2'])
-		best_test_r2_score = cv_results['test_r2'][best_test_r2_score_index]
-		best_test_estimator = cv_results['estimator'][best_test_r2_score_index]
-		train_for_best_test_r2_score = cv_results['train_r2'][best_test_r2_score_index]
-		fit_time_for_best_test_r2_score = cv_results['fit_time'][best_test_r2_score_index]
-		score_time_for_best_test_r2_score = cv_results['score_time'][best_test_r2_score_index]
-		mean_test_r2_score = np.mean(cv_results['test_r2'])
+		bst_tst_r2_idx = np.argmax(cv_res['test_r2'])
+		bst_tst_r2 = cv_res['test_r2'][bst_tst_r2_idx]
+		bst_tst_estimator = cv_res['estimator'][bst_tst_r2_idx]
+		trn_for_bst_tst_r2 = cv_res['train_r2'][bst_tst_r2_idx]
+		fit_time_for_bst_tst_r2 = cv_res['fit_time'][bst_tst_r2_idx]
+		score_time_for_bst_tst_r2 = cv_res['score_time'][bst_tst_r2_idx]
+		mean_test_r2_score = np.mean(cv_res['test_r2'])
 		
 		print("-> " + estimator_name + " scores\n");
 		print("-> Mean Train R2 Score: %0.4f\n" %(mean_train_r2_score))
-		print("-> Best Train R2 Score: %0.4f, Corresponding Test R2 Score: %0.4f, Best Train R2 Index: %d \n" %(best_train_r2_score, test_for_best_train_r2_score, best_train_r2_score_index))
+		print("-> Best Train R2 Score: %0.4f, " + 
+			"Corresponding Test R2 Score: %0.4f, " + 
+			"Best Train R2 Index: %d \n" 
+			%(bst_trn_r2, test_for_bst_trn_r2, bst_trn_r2_idx))
 		print("-> Mean Test R2 Score: %0.4f\n" %(mean_test_r2_score))
-		print("-> Best Test R2 Score: {0:0.4f}, Corresponding Train R2 Score: {1:0.4f}, Best Test R2 Index: {2:d}".format(best_test_r2_score, train_for_best_test_r2_score, best_test_r2_score_index))
+		print("-> Best Test R2 Score: {0:0.4f}, " + 
+			"Corresponding Train R2 Score: {1:0.4f}, " + 
+			"Best Test R2 Index: {2:d}".format(
+				bst_tst_r2, trn_for_bst_tst_r2, bst_tst_r2_idx))
 		
 	elif (estimator_type == 'Classification'):
 		scoring = {'accuracy': make_scorer(accuracy_score), 
@@ -658,209 +824,215 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, args):
 				   'recall': make_scorer(recall_score, average='macro'),
 				   'roc': make_scorer(recall_score, average='macro')
 				  }
-		cv_results = cross_validate(estimator, X, y, cv=cv, 
-									scoring=scoring, 
-									return_train_score=True,
-									return_estimator =True)
+		cv_res = cross_validate(estimator, 
+			X, y, 
+			cv=cv, 
+			scoring=scoring, 
+			return_train_score=True,
+			return_estimator=True)
 		
-		# best train_accuracy
-		best_train_accuracy_index = np.argmax(cv_results['train_accuracy'])
+		# best trn_acc
+		bst_trn_acc_index = np.argmax(cv_res['train_accuracy'])
 		
-		best_train_accuracy = cv_results['train_accuracy'][best_train_accuracy_index]
-		test_accuracy_for_best_train_accuracy = cv_results['test_accuracy'][best_train_accuracy_index]
+		bst_trn_acc = cv_res['train_accuracy'][bst_trn_acc_index]
+		tst_acc_for_bst_trn_acc = cv_res['test_accuracy'][bst_trn_acc_index]
 		
-		train_precision_for_best_train_accuracy = cv_results['train_precision'][best_train_accuracy_index]
-		test_precision_for_best_train_accuracy = cv_results['test_precision'][best_train_accuracy_index]
+		trn_prec_for_bst_trn_acc = cv_res['train_precision'][bst_trn_acc_index]
+		tst_prec_for_bst_trn_acc = cv_res['test_precision'][bst_trn_acc_index]
 		
-		train_recall_for_best_train_accuracy = cv_results['train_recall'][best_train_accuracy_index]
-		test_recall_for_best_train_accuracy = cv_results['test_recall'][best_train_accuracy_index]
+		trn_rec_for_bst_trn_acc = cv_res['train_recall'][bst_trn_acc_index]
+		tst_rec_for_bst_trn_acc = cv_res['test_recall'][bst_trn_acc_index]
 		
-		train_roc_for_best_train_accuracy = cv_results['train_roc'][best_train_accuracy_index]
-		test_roc_for_best_train_accuracy = cv_results['test_roc'][best_train_accuracy_index]
+		trn_roc_for_bst_trn_acc = cv_res['train_roc'][bst_trn_acc_index]
+		tst_roc_for_bst_trn_acc = cv_res['test_roc'][bst_trn_acc_index]
 		
-		# best test_accuracy
-		best_test_accuracy_index = np.argmax(cv_results['test_accuracy'])
+		# best tst_acc
+		bst_tst_acc_index = np.argmax(cv_res['test_accuracy'])
 		
-		best_test_accuracy = cv_results['test_accuracy'][best_test_accuracy_index]
-		train_accuracy_for_best_test_accuracy = cv_results['train_accuracy'][best_test_accuracy_index]
+		bst_tst_acc = cv_res['test_accuracy'][bst_tst_acc_index]
+		trn_acc_for_bst_tst_acc = cv_res['train_accuracy'][bst_tst_acc_index]
 		
-		train_precision_for_best_test_accuracy = cv_results['train_precision'][best_test_accuracy_index]
-		test_precision_for_best_test_accuracy = cv_results['test_precision'][best_test_accuracy_index]
+		trn_prec_for_bst_tst_acc = cv_res['train_precision'][bst_tst_acc_index]
+		tst_prec_for_bst_tst_acc = cv_res['test_precision'][bst_tst_acc_index]
 		
-		train_recall_for_best_test_accuracy = cv_results['train_recall'][best_test_accuracy_index]
-		test_recall_for_best_test_accuracy = cv_results['test_recall'][best_test_accuracy_index]
+		trn_rec_for_bst_tst_acc = cv_res['train_recall'][bst_tst_acc_index]
+		tst_rec_for_bst_tst_acc = cv_res['test_recall'][bst_tst_acc_index]
 		
-		train_roc_for_best_test_accuracy = cv_results['train_roc'][best_test_accuracy_index]
-		test_roc_for_best_test_accuracy = cv_results['test_roc'][best_test_accuracy_index]
-		
-		
-		# best train_precision
-		best_train_precision_index = np.argmax(cv_results['train_precision'])
-		
-		best_train_precision = cv_results['train_precision'][best_train_precision_index]
-		test_precision_for_best_train_precision = cv_results['test_precision'][best_train_precision_index]
-		
-		train_accuracy_for_best_train_precision = cv_results['train_accuracy'][best_train_precision_index]
-		test_accuracy_for_best_train_precision = cv_results['test_precision'][best_train_precision_index]
-		
-		test_recall_for_best_train_precision = cv_results['test_recall'][best_train_precision_index]
-		train_recall_for_best_train_precision = cv_results['train_recall'][best_train_precision_index]
-		
-		train_roc_for_best_train_precision = cv_results['train_roc'][best_train_precision_index]
-		test_roc_for_best_train_precision = cv_results['test_roc'][best_train_precision_index]
+		trn_roc_for_bst_tst_acc = cv_res['train_roc'][bst_tst_acc_index]
+		tst_roc_for_bst_tst_acc = cv_res['test_roc'][bst_tst_acc_index]
 		
 		
-		# best test_precision
-		best_test_precision_index = np.argmax(cv_results['test_precision'])
+		# best trn_prec
+		bst_trn_prec_index = np.argmax(cv_res['train_precision'])
 		
-		best_test_precision = cv_results['test_precision'][best_test_precision_index]
-		train_precision_for_best_test_precision = cv_results['train_precision'][best_test_precision_index]
+		bst_trn_prec = cv_res['train_precision'][bst_trn_prec_index]
+		tst_prec_for_bst_trn_prec = cv_res['test_precision'][bst_trn_prec_index]
 		
-		train_accuracy_for_best_test_precision = cv_results['train_accuracy'][best_test_precision_index]
-		test_accuracy_for_best_test_precision = cv_results['test_precision'][best_test_precision_index]
+		trn_acc_for_bst_trn_prec = cv_res['train_accuracy'][bst_trn_prec_index]
+		tst_acc_for_bst_trn_prec = cv_res['test_precision'][bst_trn_prec_index]
 		
-		test_recall_for_best_test_precision = cv_results['test_recall'][best_test_precision_index]
-		train_recall_for_best_test_precision = cv_results['train_recall'][best_test_precision_index]
+		tst_rec_for_bst_trn_prec = cv_res['test_recall'][bst_trn_prec_index]
+		trn_rec_for_bst_trn_prec = cv_res['train_recall'][bst_trn_prec_index]
 		
-		train_roc_for_best_test_precision = cv_results['train_roc'][best_test_precision_index]
-		test_roc_for_best_test_precision = cv_results['test_roc'][best_test_precision_index]
-		
-		
-		# best train_recall
-		best_train_recall_index = np.argmax(cv_results['train_recall'])
-		
-		best_train_recall = cv_results['train_recall'][best_train_recall_index]
-		test_recall_for_best_train_recall = cv_results['test_recall'][best_train_recall_index]
-		
-		train_precision_for_best_train_recall = cv_results['train_precision'][best_train_recall_index]
-		test_precision_for_best_train_recall = cv_results['test_precision'][best_train_recall_index]
-		
-		train_accuracy_for_best_train_recall = cv_results['train_accuracy'][best_train_recall_index]
-		test_accuracy_for_best_train_recall = cv_results['test_precision'][best_train_recall_index]
-		
-		train_roc_for_best_train_recall = cv_results['train_roc'][best_train_recall_index]
-		test_roc_for_best_train_recall = cv_results['test_roc'][best_train_recall_index]
+		trn_roc_for_bst_trn_prec = cv_res['train_roc'][bst_trn_prec_index]
+		tst_roc_for_bst_trn_prec = cv_res['test_roc'][bst_trn_prec_index]
 		
 		
-		# best test_recall
-		best_test_recall_index = np.argmax(cv_results['test_recall'])
+		# best tst_prec
+		bst_tst_prec_index = np.argmax(cv_res['test_precision'])
 		
-		best_test_recall = cv_results['test_recall'][best_test_recall_index]
-		train_recall_for_best_test_recall = cv_results['train_recall'][best_test_recall_index]
+		bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
+		trn_prec_for_bst_tst_prec = cv_res['train_precision'][bst_tst_prec_index]
 		
-		train_precision_for_best_test_recall = cv_results['train_precision'][best_test_recall_index]
-		test_precision_for_best_test_recall = cv_results['test_precision'][best_test_recall_index]
+		trn_acc_for_bst_tst_prec = cv_res['train_accuracy'][bst_tst_prec_index]
+		tst_acc_for_bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
 		
-		train_accuracy_for_best_test_recall = cv_results['train_accuracy'][best_test_recall_index]
-		test_accuracy_for_best_test_recall = cv_results['test_precision'][best_test_recall_index]
+		tst_rec_for_bst_tst_prec = cv_res['test_recall'][bst_tst_prec_index]
+		trn_rec_for_bst_tst_prec = cv_res['train_recall'][bst_tst_prec_index]
 		
-		train_roc_for_best_test_recall = cv_results['train_roc'][best_test_recall_index]
-		test_roc_for_best_test_recall = cv_results['test_roc'][best_test_recall_index]
-		
-		
-		# best train_roc
-		best_train_roc_index = np.argmax(cv_results['train_roc'])
-		
-		best_train_roc = cv_results['train_roc'][best_train_roc_index]
-		test_roc_for_best_train_roc = cv_results['test_roc'][best_train_roc_index]
-		
-		train_recall_for_best_train_roc = cv_results['train_recall'][best_train_roc_index]
-		test_recall_for_best_train_roc = cv_results['test_recall'][best_train_roc_index]
-		
-		train_precision_for_best_train_roc = cv_results['train_precision'][best_train_roc_index]
-		test_precision_for_best_train_roc = cv_results['test_precision'][best_train_roc_index]
-		
-		train_accuracy_for_best_train_roc = cv_results['train_accuracy'][best_train_roc_index]
-		test_accuracy_for_best_train_roc = cv_results['test_precision'][best_train_roc_index]
+		trn_roc_for_bst_tst_prec = cv_res['train_roc'][bst_tst_prec_index]
+		tst_roc_for_bst_tst_prec = cv_res['test_roc'][bst_tst_prec_index]
 		
 		
-		# best test_roc
-		best_test_roc_index = np.argmax(cv_results['test_roc'])
+		# best trn_rec
+		bst_trn_rec_index = np.argmax(cv_res['train_recall'])
 		
-		best_test_roc = cv_results['test_roc'][best_test_roc_index]
-		train_roc_for_best_test_roc = cv_results['train_roc'][best_test_roc_index]
+		bst_trn_rec = cv_res['train_recall'][bst_trn_rec_index]
+		tst_rec_for_bst_trn_rec = cv_res['test_recall'][bst_trn_rec_index]
 		
-		train_precision_for_best_test_roc = cv_results['train_precision'][best_test_roc_index]
-		test_precision_for_best_test_roc = cv_results['test_precision'][best_test_roc_index]
+		trn_prec_for_bst_trn_rec = cv_res['train_precision'][bst_trn_rec_index]
+		tst_prec_for_bst_trn_rec = cv_res['test_precision'][bst_trn_rec_index]
 		
-		train_accuracy_for_best_test_roc = cv_results['train_accuracy'][best_test_roc_index]
-		test_accuracy_for_best_test_roc = cv_results['test_precision'][best_test_roc_index]
+		trn_acc_for_bst_trn_rec = cv_res['train_accuracy'][bst_trn_rec_index]
+		tst_acc_for_bst_trn_rec = cv_res['test_precision'][bst_trn_rec_index]
 		
-		train_recall_for_best_test_roc = cv_results['train_recall'][best_test_roc_index]
-		test_recall_for_best_test_roc = cv_results['test_recall'][best_test_roc_index]
+		trn_roc_for_bst_trn_rec = cv_res['train_roc'][bst_trn_rec_index]
+		tst_roc_for_bst_trn_rec = cv_res['test_roc'][bst_trn_rec_index]
 		
 		
-		indices = ['Train Accuracy', 'Test Accuracy', 'Train Precision', 'Test Precision', 'Train Recall', 'Test Recall', 'Train ROC', 'Test ROC']
-		columns = ['Index', 'Best', 'Train Accuracy', 'Test Accuracy', 'Train Precision', 'Test Precision', 'Train Recall', 'Test Recall', 'Train ROC', 'Test ROC']
+		# best tst_rec
+		bst_tst_rec_index = np.argmax(cv_res['test_recall'])
+		
+		bst_tst_rec = cv_res['test_recall'][bst_tst_rec_index]
+		trn_rec_for_bst_tst_rec = cv_res['train_recall'][bst_tst_rec_index]
+		
+		trn_prec_for_bst_tst_rec = cv_res['train_precision'][bst_tst_rec_index]
+		tst_prec_for_bst_tst_rec = cv_res['test_precision'][bst_tst_rec_index]
+		
+		trn_acc_for_bst_tst_rec = cv_res['train_accuracy'][bst_tst_rec_index]
+		tst_acc_for_bst_tst_rec = cv_res['test_precision'][bst_tst_rec_index]
+		
+		trn_roc_for_bst_tst_rec = cv_res['train_roc'][bst_tst_rec_index]
+		tst_roc_for_bst_tst_rec = cv_res['test_roc'][bst_tst_rec_index]
+		
+		
+		# best trn_roc
+		bst_trn_roc_index = np.argmax(cv_res['train_roc'])
+		
+		bst_trn_roc = cv_res['train_roc'][bst_trn_roc_index]
+		tst_roc_for_bst_trn_roc = cv_res['test_roc'][bst_trn_roc_index]
+		
+		trn_rec_for_bst_trn_roc = cv_res['train_recall'][bst_trn_roc_index]
+		tst_rec_for_bst_trn_roc = cv_res['test_recall'][bst_trn_roc_index]
+		
+		trn_prec_for_bst_trn_roc = cv_res['train_precision'][bst_trn_roc_index]
+		tst_prec_for_bst_trn_roc = cv_res['test_precision'][bst_trn_roc_index]
+		
+		trn_acc_for_bst_trn_roc = cv_res['train_accuracy'][bst_trn_roc_index]
+		tst_acc_for_bst_trn_roc = cv_res['test_precision'][bst_trn_roc_index]
+		
+		
+		# best tst_roc
+		bst_tst_roc_index = np.argmax(cv_res['test_roc'])
+		
+		bst_tst_roc = cv_res['test_roc'][bst_tst_roc_index]
+		trn_roc_for_bst_tst_roc = cv_res['train_roc'][bst_tst_roc_index]
+		
+		trn_prec_for_bst_tst_roc = cv_res['train_precision'][bst_tst_roc_index]
+		tst_prec_for_bst_tst_roc = cv_res['test_precision'][bst_tst_roc_index]
+		
+		trn_acc_for_bst_tst_roc = cv_res['train_accuracy'][bst_tst_roc_index]
+		tst_acc_for_bst_tst_roc = cv_res['test_precision'][bst_tst_roc_index]
+		
+		trn_rec_for_bst_tst_roc = cv_res['train_recall'][bst_tst_roc_index]
+		tst_rec_for_bst_tst_roc = cv_res['test_recall'][bst_tst_roc_index]
+		
+		
+		indices = ['Train Accuracy', 'Test Accuracy', 
+			'Train Precision', 'Test Precision', 'Train Recall', 
+			'Test Recall', 'Train ROC', 'Test ROC']
+		columns = ['Index', 'Best', 'Train Accuracy', 
+			'Test Accuracy', 'Train Precision', 'Test Precision', 
+			'Train Recall', 'Test Recall', 'Train ROC', 'Test ROC']
 					
 		d = [
-			 [ best_train_accuracy_index, best_train_accuracy, 
-				best_train_accuracy, test_accuracy_for_best_train_accuracy, 
-				train_precision_for_best_train_accuracy, test_precision_for_best_train_accuracy, 
-				train_recall_for_best_train_accuracy, test_recall_for_best_train_accuracy, 
-				train_roc_for_best_train_accuracy, test_roc_for_best_train_accuracy ],
+			 [ bst_trn_acc_index, bst_trn_acc, 
+				bst_trn_acc, tst_acc_for_bst_trn_acc, 
+				trn_prec_for_bst_trn_acc, tst_prec_for_bst_trn_acc, 
+				trn_rec_for_bst_trn_acc, tst_rec_for_bst_trn_acc, 
+				trn_roc_for_bst_trn_acc, tst_roc_for_bst_trn_acc ],
 			 
-			 [ best_test_accuracy_index, best_test_accuracy, 
-				train_accuracy_for_best_test_accuracy, best_test_accuracy, 
-				train_precision_for_best_test_accuracy, test_precision_for_best_test_accuracy, 
-				train_recall_for_best_test_accuracy, test_recall_for_best_test_accuracy, 
-				train_roc_for_best_test_accuracy, test_roc_for_best_test_accuracy ],
+			 [ bst_tst_acc_index, bst_tst_acc, 
+				trn_acc_for_bst_tst_acc, bst_tst_acc, 
+				trn_prec_for_bst_tst_acc, tst_prec_for_bst_tst_acc, 
+				trn_rec_for_bst_tst_acc, tst_rec_for_bst_tst_acc, 
+				trn_roc_for_bst_tst_acc, tst_roc_for_bst_tst_acc ],
 			 
-			 [ best_train_precision_index, best_train_precision, 
-				train_accuracy_for_best_train_precision, test_accuracy_for_best_train_precision, 
-				best_train_precision, test_precision_for_best_train_precision, 
-				train_recall_for_best_train_precision, test_recall_for_best_train_precision, 
-				train_roc_for_best_train_precision, test_roc_for_best_train_precision ],
+			 [ bst_trn_prec_index, bst_trn_prec, 
+				trn_acc_for_bst_trn_prec, tst_acc_for_bst_trn_prec, 
+				bst_trn_prec, tst_prec_for_bst_trn_prec, 
+				trn_rec_for_bst_trn_prec, tst_rec_for_bst_trn_prec, 
+				trn_roc_for_bst_trn_prec, tst_roc_for_bst_trn_prec ],
 			 
-			 [ best_test_precision_index, best_test_precision, 
-				train_accuracy_for_best_test_precision, test_accuracy_for_best_test_precision, 
-				train_precision_for_best_test_precision, best_test_precision, 
-				train_recall_for_best_test_precision, test_recall_for_best_test_precision, 
-				train_roc_for_best_test_precision, test_roc_for_best_test_precision ],
+			 [ bst_tst_prec_index, bst_tst_prec, 
+				trn_acc_for_bst_tst_prec, tst_acc_for_bst_tst_prec, 
+				trn_prec_for_bst_tst_prec, bst_tst_prec, 
+				trn_rec_for_bst_tst_prec, tst_rec_for_bst_tst_prec, 
+				trn_roc_for_bst_tst_prec, tst_roc_for_bst_tst_prec ],
 			 
-			 [ best_train_recall_index, best_train_recall, 
-				train_accuracy_for_best_train_recall, test_accuracy_for_best_train_recall, 
-				train_precision_for_best_train_recall, test_precision_for_best_train_recall, 
-				best_train_recall, test_recall_for_best_train_recall, 
-				train_roc_for_best_train_recall, test_roc_for_best_train_recall ],
+			 [ bst_trn_rec_index, bst_trn_rec, 
+				trn_acc_for_bst_trn_rec, tst_acc_for_bst_trn_rec, 
+				trn_prec_for_bst_trn_rec, tst_prec_for_bst_trn_rec, 
+				bst_trn_rec, tst_rec_for_bst_trn_rec, 
+				trn_roc_for_bst_trn_rec, tst_roc_for_bst_trn_rec ],
 			 
-			 [ best_test_recall_index, best_test_recall, 
-				train_accuracy_for_best_test_recall, test_accuracy_for_best_test_recall, 
-				train_precision_for_best_test_recall, test_precision_for_best_test_recall, 
-				train_recall_for_best_test_recall, best_test_recall, 
-				train_roc_for_best_test_recall, test_roc_for_best_test_recall ],
+			 [ bst_tst_rec_index, bst_tst_rec, 
+				trn_acc_for_bst_tst_rec, tst_acc_for_bst_tst_rec, 
+				trn_prec_for_bst_tst_rec, tst_prec_for_bst_tst_rec, 
+				trn_rec_for_bst_tst_rec, bst_tst_rec, 
+				trn_roc_for_bst_tst_rec, tst_roc_for_bst_tst_rec ],
 				
-			 [ best_train_roc_index, best_train_roc, 
-				train_accuracy_for_best_train_roc, test_accuracy_for_best_train_roc, 
-				train_precision_for_best_train_roc, test_precision_for_best_train_roc, 
-				train_recall_for_best_train_roc, test_recall_for_best_train_roc, 
-				best_train_roc, test_roc_for_best_train_roc ],
+			 [ bst_trn_roc_index, bst_trn_roc, 
+				trn_acc_for_bst_trn_roc, tst_acc_for_bst_trn_roc, 
+				trn_prec_for_bst_trn_roc, tst_prec_for_bst_trn_roc, 
+				trn_rec_for_bst_trn_roc, tst_rec_for_bst_trn_roc, 
+				bst_trn_roc, tst_roc_for_bst_trn_roc ],
 			 
-			 [ best_test_roc_index, best_test_roc, 
-				train_accuracy_for_best_test_roc, test_accuracy_for_best_test_roc, 
-				train_precision_for_best_test_roc, test_precision_for_best_test_roc, 
-				train_recall_for_best_test_roc, test_recall_for_best_test_roc, 
-				train_roc_for_best_test_roc, best_test_roc ],
+			 [ bst_tst_roc_index, bst_tst_roc, 
+				trn_acc_for_bst_tst_roc, tst_acc_for_bst_tst_roc, 
+				trn_prec_for_bst_tst_roc, tst_prec_for_bst_tst_roc, 
+				trn_rec_for_bst_tst_roc, tst_rec_for_bst_tst_roc, 
+				trn_roc_for_bst_tst_roc, bst_tst_roc ],
 			]
 		
 		df = pd.DataFrame(d, index = indices, columns = columns)
 		
-		display_func("-> " + estimator_name + " scores") 
+		display_func("-> " + estimator_name + " scores", mode=__PRINT) 
 		display_func(df) # to format output similar to Jupyter's output
 		
-		# print(cv_results.keys())
+		# print(cv_res.keys())
 	else:
 		display_func("Estimator Type not specificed", mode=__PRINT)
 		print_separator()
 		return
 	
 	print_separator()
-	# print(cv_results.keys())
+	# print(cv_res.keys())
 	
-	return cv_results
+	return cv_res
 
 def print_confusion_matrix(y_true, y_pred):
-	"""Prints the confision matrix with columns and index
+	"""Prints the confision matrix with columns and index labels
 	
     Args:
 		y_true (Union[ndarray, pd.Series]): Actual Response
@@ -871,7 +1043,18 @@ def print_confusion_matrix(y_true, y_pred):
 	cfm_i = pd.DataFrame(confusion_matrix(y_true, y_pred))
 	cfm_columns = []
 	cfm_index = []
-	for each_class in np.unique(y_true):
+	# https://scikit-learn.org/stable/modules/generated/
+	# sklearn.metrics.confusion_matrix.html
+	#
+	# List of labels to index the matrix. This may be used to reorder 
+	# or select a subset of labels.
+	# If none is given, those that appear at least once in y_true or 
+	# y_pred are used in sorted order
+	# 
+	# As no labels are passed as args in the call to confusion_matrix 
+	# then the classes are assigned on sorted order of unique values 
+	# from response
+	for each_class in sorted(np.unique(y_true)):
 		cfm_columns.append("Predicted Class: " + str(each_class))
 		cfm_index.append("Actual Class: " + str(each_class))
 		
@@ -896,7 +1079,8 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator):
 	# create a mesh to plot in
 	x_min, x_max = x_axis_data.min() - 1, x_axis_data.max() + 1
 	y_min, y_max = y_axis_data.min() - 1, y_axis_data.max() + 1
-	xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+	xx, yy = np.meshgrid(np.arange(x_min, x_max, h), 
+		np.arange(y_min, y_max, h))
 
 	# Plot the decision boundary. For that, we will assign a color to each
 	# point in the mesh [x_min, m_max]x[y_min, y_max].
@@ -905,22 +1089,6 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator):
 	# Put the result into a color plot
 	Z = Z.reshape(xx.shape)
 	plt.contour(xx, yy, Z, cmap=plt.cm.Paired)
-
-# def plot_roc_curve(estimator, X_test, y_test, classes):
-	# y_pred = estimator.predict(X_test)
-	# fpr, tpr, thresholds = roc_curve(y_test, y_pred)
-	# roc_auc = roc_auc_score(y_test, y_pred)
-	# Plot ROC curve
-	# plt.figure()
-	# plt.figure(figsize=(12,6))
-	# lw = 2
-	# plt.plot(fpr, tpr, label='ROC curve, area = %0.5f' % roc_auc)
-	# plt.plot([0, 1], [0, 1], 'k--')  # random predictions curve
-	# plt.xlim([0.0, 1.0])
-	# plt.ylim([0.0, 1.0])
-	# plt.xlabel('False Positive Rate')
-	# plt.ylabel('True Positive Rate')
-	# plt.title('Receiver Operating Characteristic')
 
 # https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
 def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes):
@@ -938,7 +1106,8 @@ def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes):
 		print("Number of classes have to be greater than or equal to 2")
 		return None
 	
-	# typicall classes are 0,1 or -1, 1 in two class responses. if not then will this work?
+	# typical classes are 0,1 or -1, 1 in two class responses. 
+	# if not then will this work?
 	if(num_of_classes == 2):
 		classifier = OneVsRestClassifier(estimator)
 		y_pred = classifier.fit(X_train, y_train).predict(X_test)
@@ -947,18 +1116,24 @@ def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes):
 		lw = 2
 		plt.figure(figsize=(12,6))
 		plt.plot(fpr, tpr, lw=2)
-		plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)  # random predictions curve
+		
+		# random predictions curve
+		plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)
+		
 		plt.xlim([-0.001, 1.0])
 		plt.ylim([0.0, 1.05])
 		plt.xlabel('False Positive Rate')
 		plt.ylabel('True Positive Rate')
-		plt.title('ROC curve (area = %0.3f)' %roc_auc)
+		plt.title('Receiver Operating Characteristic (area = %0.3f)' %roc_auc)
 		return fpr, tpr, roc_auc
 
 	# when number of classes is more than 2 then
 	
 	# Binarize the output
-	y_test = label_binarize(y_test, classes=classes) # converts 3 classes in one column to 3 columns binary matrix
+	
+	# converts 3 classes in one column to 3 columns binary matrix
+	y_test = label_binarize(y_test, classes=classes)
+	
 	num_of_classes = y_test.shape[1]
 
 	# Learn to predict each class against the other
@@ -1001,7 +1176,8 @@ def plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes):
 	num_of_classes = len(classes)
 	
 	# First aggregate all false positive rates
-	all_fpr = np.unique(np.concatenate([fpr[i] for i in range(num_of_classes)]))
+	all_fpr = np.unique(
+		np.concatenate([fpr[i] for i in range(num_of_classes)]) )
 
 	# Then interpolate all ROC curves at this points
 	mean_tpr = np.zeros_like(all_fpr)
@@ -1041,6 +1217,6 @@ def plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes):
 	plt.ylim([0.0, 1.05])
 	plt.xlabel('False Positive Rate')
 	plt.ylabel('True Positive Rate')
-	plt.title('Some extension of Receiver operating characteristic to multi-class')
+	plt.title('Extension of ROC to multi-class')
 	plt.legend(loc="lower right")
 	plt.show()
