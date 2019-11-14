@@ -79,6 +79,10 @@ from IPython.display import display, Markdown, HTML
 
 import category_encoders
 
+from sklearn import svm
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+
 __PRINT = 'PRINT'
 __HTML = 'HTML'
 
@@ -337,17 +341,21 @@ def __get_plot_attrs(**kwargs):
 	
 	if 'aspect' not in kwargs:
 		kwargs['aspect'] = 1
+	
+	if 'kde' not in kwargs:
+		kwargs['kde']=True
 		
 	return ( kwargs['hue_column'], 
 		kwargs['split_plots_by'], 
 		kwargs['height'], 
-		kwargs['aspect'] )
+		kwargs['aspect'],
+		kwargs['kde'])
 
 def count_plots(df, columns, **kwargs):
 	"""Count Plots using seaborn
-
+	
     Display Count plots for the given columns in a DataFrame
-
+	
     Args:
         df (pd.DataFrame): DataFrame
         columns (array-like): Columns for which count plot has to be shown
@@ -361,7 +369,11 @@ def count_plots(df, columns, **kwargs):
 		
     """
 	
-	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	(hue_column, 
+	split_plots_by, 
+	height, 
+	aspect, 
+	kde) = __get_plot_attrs(**kwargs)
 	
 	columns = pd.Series(columns)
 	
@@ -437,6 +449,27 @@ def count_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 	plt.show()
 	print_new_line()
 
+def dist_plots(df, columns, **kwargs):
+	"""Dist Plots using seaborn
+	
+    Args:
+        df (pd.DataFrame): DataFrame
+        columns (array-like): Columns for which count plot has to be shown
+		kwargs (dict of str): hue_column (for color)
+			split_plots_by (split seaborn FacetGrid by column, ex: Gender)
+			height (sets the height of plot)
+			aspect (determines the widht of the plot based on height)
+	
+	Example:
+		`utils.dist_plots(data, numeric_cols, height=4, aspect=1.5, 
+			hue_column='class', kde=False)`
+		
+    """
+	
+	kwargs['kde']=False
+	
+	kde_plots(df, columns, **kwargs)
+
 def kde_plots(df, columns, **kwargs):
 	"""KDE Plots using seaborn
 	
@@ -451,15 +484,22 @@ def kde_plots(df, columns, **kwargs):
 	Example:
 		`utils.kde_plots(data, numeric_cols, height=4, aspect=1.5, 
 			hue_column='class')`
-		
+	
     """
 	
-	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	(hue_column, 
+	split_plots_by, 
+	height, 
+	aspect, 
+	kde) = __get_plot_attrs(**kwargs)
 	
 	columns = pd.Series(columns)
 	
 	for each_col in columns:
-		display_func("KDE Plot for: " + str(each_col), mode=__PRINT)
+		if(kde):
+			display_func("KDE Plot for: " + str(each_col), mode=__PRINT)
+		else:
+			display_func("Histogram for: " + str(each_col), mode=__PRINT)
 		
 		if(split_plots_by is None):
 			if(hue_column is None):
@@ -484,7 +524,7 @@ def kde_plots(df, columns, **kwargs):
 					height=height,
 					aspect=aspect)
 					
-		g = (g.map(sns.distplot, each_col, hist=True))
+		g = (g.map(sns.distplot, each_col, hist=True, kde=kde))
 		g.add_legend()
 		plt.show()
 		print_new_line()
@@ -547,77 +587,76 @@ def encode_columns(df, method, columns = []):
     """
 	
 	kount = 0
-	encoder_to_return = None
 	df = df.copy()
-	
-	if(method == 'labelencoder'):
-		label_encoder = LabelEncoder()
-		encoder_to_return = label_encoder
-	elif(method == 'binary'):
-		label_binarizer = LabelBinarizer()
-		encoder_to_return = label_binarizer
-	elif(method == 'onehot'):
-		one_hot_encoder = OneHotEncoder(sparse=False)
-		encoder_to_return = one_hot_encoder
-	elif(method == 'pd_dummies'):
-		encoder_to_return = None
 		
 	for columnName in columns:
 		if(method == 'labelencoder'):
+			label_encoder = LabelEncoder()
 			df[columnName] = label_encoder.fit_transform(
 				df[columnName].astype(str))
-			display_func("-> Transformed X[" + columnName + 
-				"] using sklearn.LabelEncoder") 
+			display_func("-> Transformed [" + columnName + 
+				"] using sklearn.LabelEncoder", mode=__PRINT)
+			display_func("--> Classes: " + str(label_encoder.classes_), 
+				mode=__PRINT)
 		elif(method == 'binary'):
+			label_binarizer = LabelBinarizer()
 			lb_results = label_binarizer.fit_transform(df[columnName])
-			display_func("-> Transformed X[" + columnName + 
+			display_func("-> Transformed [" + columnName + 
 				"] using sklearn.LabelBinarizer")
 			if(label_binarizer.y_type_ == 'multiclass'):
 				display_func("--> Type of target data is: " + 
-					label_binarizer.y_type_)
+					label_binarizer.y_type_, mode=__PRINT)
 				temp_df = pd.DataFrame(lb_results, 
 					columns = label_binarizer.classes_, index = df.index)
 				df = df.join(temp_df)
 				display_func("--> Added following columns to dataframe: " + 
-					str(label_binarizer.classes_))
+					str(label_binarizer.classes_), mode=__PRINT)
 		elif(method == 'onehot'):
+			one_hot_encoder = OneHotEncoder(sparse=False)
 			ohe_results = one_hot_encoder.fit_transform(df[[columnName]])
-			display_func("-> Transformed X[" + columnName + 
-				"] using sklearn.OneHotEncoder.")
+			display_func("-> Transformed [" + columnName + 
+				"] using sklearn.OneHotEncoder", mode=__PRINT)
 			temp_df = pd.DataFrame(ohe_results, 
 				columns = one_hot_encoder.get_feature_names())
 			df = pd.concat([df,temp_df],axis=1)
 			display_func("--> Added following columns to returned dataframe: " 
-				+ str(one_hot_encoder.categories))
+				+ str(one_hot_encoder.categories), mode=__PRINT)
 		elif(method == 'pd_dummies'):
 			df = pd.get_dummies(df, columns = columnName)
-			display_func("-> Transformed X[" + columnName + 
-				"] using pd.get_dummies.")
+			display_func("-> Transformed [" + columnName + 
+				"] using pd.get_dummies", mode=__PRINT)
 		
 		kount = kount + 1
 		if(kount < len(columns)):
-			display_func("")
+			display_func("", mode=__PRINT)
 		
 	print_separator()
-	return df, encoder_to_return
+	return df
 
-def do_scaling(df, method):
-	"""Summary line.
+def do_scaling(df, method, columns_to_scale=[]):
+	"""Scale data using the specified method
 
-    Extended description of function.
+    Columns specified in the arguments will be scaled
 
     Args:
-        
+        df (pd.DataFrame): DataFrame
+		columns (array-like): List of columns that will be scaled
 		
+	Returns:
+		df (pd.DataFrame)
+	
     """
 	
 	if(method == 'StandardScaler'):
 		scaler = StandardScaler()
 		display_func("-> Data scaled using StandardScaler")
 		print_separator()
-		columns = df.columns
-		return pd.DataFrame(scaler.fit_transform(df), columns=columns)
-		
+		df_scaled = pd.DataFrame(scaler.fit_transform(df[columns_to_scale]), columns=columns_to_scale)
+	
+	df_not_scaled = df[ df.columns[ ~df.columns.isin( columns_to_scale ) ] ]
+	df_scaled = df_scaled.join(df_not_scaled)
+	
+	return df_scaled
 		
 def do_feature_selection(X, y, method):
 	"""Summary line.
@@ -729,9 +768,9 @@ def do_feature_selection(X, y, method):
 
 def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 	"""Cross Validate (sklearn)
-
+	
     Args:
-        
+	
 	Example:
 		cv_iterator = ShuffleSplit(n_splits=2, test_size=0.2, random_state=31)
 		cv_results = utils.do_cross_validate(X_train, 
@@ -1064,9 +1103,9 @@ def print_confusion_matrix(y_true, y_pred):
 	display_func(cfm_i,mode=None)
 
 def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator):
-	"""Summary line.
+	"""Plots the decision boundary
 
-    Extended description of function.
+    
 
     Args:
         
@@ -1091,7 +1130,80 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator):
 	plt.contour(xx, yy, Z, cmap=plt.cm.Paired)
 
 # https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
-def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes):
+# def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes, is_for_outlier_detection=False):
+	# """Summary line.
+
+    # Extended description of function.
+
+    # Args:
+        
+		
+    # """
+	
+	# num_of_classes = len(classes)
+	# if(num_of_classes < 2):
+		# print("Number of classes have to be greater than or equal to 2")
+		# return None
+	
+	# # typical classes are 0,1 or -1, 1 in two class responses. 
+	# # if not then will this work?
+	# if(num_of_classes == 2):
+		# classifier = OneVsRestClassifier(estimator)
+		# if(is_for_outlier_detection):
+			# y_pred = estimator.fit(X_train).predict(X_test)
+		# else:
+			# y_pred = classifier.fit(X_train, y_train).predict(X_test)
+		# fpr, tpr, thresholds = roc_curve(y_test, y_pred)
+		# roc_auc = roc_auc_score(y_test, y_pred)
+		# lw = 2
+		# plt.figure(figsize=(12,6))
+		# plt.plot(fpr, tpr, lw=2)
+		
+		# # random predictions curve
+		# plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)
+		
+		# plt.xlim([-0.001, 1.0])
+		# plt.ylim([0.0, 1.05])
+		# plt.xlabel('False Positive Rate')
+		# plt.ylabel('True Positive Rate')
+		# plt.title('Receiver Operating Characteristic (area = %0.3f)' %roc_auc)
+		# return fpr, tpr, roc_auc
+
+	# # when number of classes is more than 2 then
+	
+	# # Binarize the output
+	
+	# # converts 3 classes in one column to 3 columns binary matrix
+	# y_test = label_binarize(y_test, classes=classes)
+	
+	# num_of_classes = y_test.shape[1]
+
+	# # Learn to predict each class against the other
+	# classifier = OneVsRestClassifier(estimator)
+	
+	# # as of now found that SVM only has the decision_function implemented
+	# if hasattr(classifier, "decision_function"):
+		# y_pred = classifier.fit(X_train, y_train).decision_function(X_test)
+	# else:
+		# y_pred = classifier.fit(X_train, y_train).predict_proba(X_test)
+	
+	# # Compute ROC curve and ROC area for each class
+	# fpr = dict()
+	# tpr = dict()
+	# roc_auc = dict()
+	# for i in range(num_of_classes):
+		# fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_pred[:, i])
+		# roc_auc[i] = auc(fpr[i], tpr[i])
+
+	# # Compute micro-average ROC curve and ROC area
+	# fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred.ravel())
+	# roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
+	
+	# plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes)
+	
+	# return fpr, tpr, roc_auc
+
+def plot_roc_curve_binary_class(y_true, y_pred):
 	"""Summary line.
 
     Extended description of function.
@@ -1101,79 +1213,66 @@ def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes):
 		
     """
 	
-	num_of_classes = len(classes)
-	if(num_of_classes < 2):
-		print("Number of classes have to be greater than or equal to 2")
+	num_of_classes = len(np.unique(y_true))
+	if(num_of_classes != 2):
+		print("Number of classes should be equal to 2")
 		return None
 	
-	# typical classes are 0,1 or -1, 1 in two class responses. 
-	# if not then will this work?
-	if(num_of_classes == 2):
-		classifier = OneVsRestClassifier(estimator)
-		y_pred = classifier.fit(X_train, y_train).predict(X_test)
-		fpr, tpr, thresholds = roc_curve(y_test, y_pred)
-		roc_auc = roc_auc_score(y_test, y_pred)
-		lw = 2
-		plt.figure(figsize=(12,6))
-		plt.plot(fpr, tpr, lw=2)
-		
-		# random predictions curve
-		plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)
-		
-		plt.xlim([-0.001, 1.0])
-		plt.ylim([0.0, 1.05])
-		plt.xlabel('False Positive Rate')
-		plt.ylabel('True Positive Rate')
-		plt.title('Receiver Operating Characteristic (area = %0.3f)' %roc_auc)
-		return fpr, tpr, roc_auc
-
-	# when number of classes is more than 2 then
+	fpr, tpr, thresholds = roc_curve(y_true, y_pred)
+	roc_auc = roc_auc_score(y_true, y_pred)
+	lw = 2
+	plt.figure(figsize=(12,6))
+	plt.plot(fpr, tpr, lw=2)
 	
-	# Binarize the output
+	# random predictions curve
+	plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)
+	
+	plt.xlim([-0.001, 1.0])
+	plt.ylim([0.0, 1.05])
+	plt.xlabel('False Positive Rate')
+	plt.ylabel('True Positive Rate')
+	plt.title('Receiver Operating Characteristic (area = %0.3f)' %roc_auc)
+	
+	return fpr, tpr, roc_auc
+
+# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
+def plot_roc_curve_multiclass(estimator, X_train, X_test, y_train, y_test):
+	"""Summary line.
+
+    Extended description of function.
+
+    Args:
+        
+		
+    """
 	
 	# converts 3 classes in one column to 3 columns binary matrix
 	y_test = label_binarize(y_test, classes=classes)
 	
+	# get the total number of classes in y_test
 	num_of_classes = y_test.shape[1]
-
+	
 	# Learn to predict each class against the other
 	classifier = OneVsRestClassifier(estimator)
 	
 	# as of now found that SVM only has the decision_function implemented
 	if hasattr(classifier, "decision_function"):
-		y_pred = classifier.fit(X_train, y_train).decision_function(X_test)
+		y_test_pred = classifier.fit(X_train, 
+									y_train).decision_function(X_test)
 	else:
-		y_pred = classifier.fit(X_train, y_train).predict_proba(X_test)
+		y_test_pred = classifier.fit(X_train, y_train).predict_proba(X_test)
 	
 	# Compute ROC curve and ROC area for each class
 	fpr = dict()
 	tpr = dict()
 	roc_auc = dict()
 	for i in range(num_of_classes):
-		fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_pred[:, i])
+		fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_test_pred[:, i])
 		roc_auc[i] = auc(fpr[i], tpr[i])
 
 	# Compute micro-average ROC curve and ROC area
-	fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred.ravel())
+	fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_test_pred.ravel())
 	roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-	
-	plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes)
-	
-	return fpr, tpr, roc_auc
-
-def plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes):
-	"""Summary line.
-
-    Extended description of function.
-
-    Args:
-        
-		
-    """
-	
-	# Compute macro-average ROC curve and ROC area
-
-	num_of_classes = len(classes)
 	
 	# First aggregate all false positive rates
 	all_fpr = np.unique(
@@ -1220,3 +1319,113 @@ def plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes):
 	plt.title('Extension of ROC to multi-class')
 	plt.legend(loc="lower right")
 	plt.show()
+
+def do_outlier_detection(df, target_column, outlier_classes, 
+						method, **kwargs):
+	
+	predictor_columns = df.columns[~df.columns.isin([target_column])]
+	
+	# copy of dataframe
+	df = df.copy()
+	
+	# convert target column to str type
+	df[target_column] = df[target_column].astype('str')
+	
+	# assign all values that are outliers as -1
+	for outlier_class in outlier_classes:
+		df.loc[(df[target_column] == str(outlier_class)), target_column] = -1
+	
+	# assign the rest as inliers
+	df.loc[~(df[target_column] == -1), target_column] = 1
+	
+	if(method == 'OneClassSVM'):
+		display_func("Using " + method +" for Outlier Detection", __PRINT)
+		print_new_line()
+		inliers = df[df[target_column] == 1]
+		outliers = df[~(df[target_column] == 1)]
+
+		del inliers[target_column]
+		del outliers[target_column]
+		
+		classifier = svm.OneClassSVM(kernel=kwargs['kernel'], nu=kwargs['nu'], 
+									gamma='scale')
+		classifier.fit(inliers)
+
+		inlier_pred = classifier.predict(inliers)
+		error_inlier_pred = inlier_pred[inlier_pred == -1].size
+		pct_error_inlier_pred = (error_inlier_pred/inliers.shape[0]) * 100
+		display_func("Error Inlier Pred (inliers classified as outliers):" + 
+			str(error_inlier_pred) + ", Percentage Error: " + 
+			str( round(pct_error_inlier_pred,2) ), mode=__PRINT)
+
+		outlier_pred = classifier.predict(outliers)
+		error_outlier_pred = outlier_pred[outlier_pred == 1].size
+		pct_error_outlier_pred = (error_outlier_pred/outliers.shape[0]) * 100
+		display_func("Error Outlier Pred (outliers classified as inliers):" + 
+						str(error_outlier_pred) + ", Percentage Error: " + 
+						str( round(pct_error_outlier_pred,2) ), mode=__PRINT)
+		
+		print_new_line()
+		
+		y_true = df[target_column]
+		y_pred = classifier.predict(df[predictor_columns])
+		
+		display_func("Confusion Matrix after Predict on Entire Data", 
+						mode=__PRINT)
+		print_confusion_matrix(y_true, y_pred)
+		print_new_line()
+		
+		display_func("Classification Report after Predict on Entire Data", 
+						mode=__PRINT)
+		print(classification_report(y_true, y_pred))
+		
+		if(len(predictor_columns) == 2):
+			display_func("Plotting Boundary", mode=__PRINT)
+			plot_decision_boundary(df[predictor_columns[0]], 
+								df[predictor_columns[1]], 
+								df[target_column], classifier)
+		return classifier
+	elif(method=='IsolationForest'):
+		display_func("Using " + method +" for Outlier Detection", __PRINT)
+		print_new_line()
+		X, y = get_X_and_y(df, target_column)
+		X_train, X_test, y_train, y_test = train_test_split(X, y, 
+															random_state=42)
+		classifier = IsolationForest(behaviour='new', 
+									random_state=42, 
+									contamination=kwargs['contamination'])
+		classifier.fit(X_train)
+		y_test_pred = classifier.predict(X_test)
+		
+		display_func("Confusion Matrix after Predict on Test Data", 
+						mode=__PRINT)
+		print_confusion_matrix(y_test, y_test_pred)
+		print_new_line()
+		
+		display_func("Classification Report after Predict on Test Data", 
+						mode=__PRINT)
+		print(classification_report(y_test, y_test_pred))
+		
+		if(len(predictor_columns) == 2):
+			display_func("Plotting Boundary", mode=__PRINT)
+			plot_decision_boundary(X_test[predictor_columns[0]], 
+								X_test[predictor_columns[1]], 
+								y_test, classifier)
+		return classifier
+	elif(method=='LocalOutlierFactor'):
+		display_func("Using " + method +" for Outlier Detection", __PRINT)
+		print_new_line()
+		X, y = get_X_and_y(df, target_column)
+		classifier = LocalOutlierFactor(n_neighbors=kwargs['n_neighbors'])
+		y_pred = classifier.fit_predict(X)
+		
+		display_func("Confusion Matrix after Predict on Test Data", 
+						mode=__PRINT)
+		print_confusion_matrix(y, y_pred)
+		print_new_line()
+		
+		display_func("Classification Report after Predict on Test Data", 
+						mode=__PRINT)
+		print(classification_report(y, y_pred))
+		
+		return classifier
