@@ -22,7 +22,7 @@ copyright = '2019, bvoleti-p'
 author = 'bvoleti-p'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.3.dev5'
+release = '0.0.3.dev6'
 
 
 # -- General configuration ---------------------------------------------------
