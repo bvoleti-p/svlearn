@@ -71,10 +71,6 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import label_binarize
 from sklearn.multiclass import OneVsRestClassifier
 
-import keras
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
-
 from IPython.display import display, Markdown, HTML
 
 import category_encoders
