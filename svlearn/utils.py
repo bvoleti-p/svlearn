@@ -5,7 +5,6 @@
 import numpy as np
 import pandas as pd
 
-from sklearn import metrics
 from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import confusion_matrix
@@ -15,7 +14,7 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
-from sklearn.metrics.scorer import make_scorer
+from sklearn.metrics import make_scorer
 from sklearn.metrics import roc_curve
 from sklearn.metrics import auc
 from scipy import interp
@@ -83,6 +82,7 @@ import category_encoders
 from sklearn import svm
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
+from sklearn.covariance import EllipticEnvelope
 
 __HTML = 'HTML'
 __DISPLAY = 'DISPLAY'
@@ -91,13 +91,12 @@ __line_to_print = "________________________________________"
 
 def print_func(value_to_print, mode=None):
 	"""Display or Print an object or string
-		
+	
 	Args:
 		value_to_print (Union[str, object]): Value to print
-		mode (str): 	`DISPLAY` - `display(value_to_print)`
-						`HTML` - `display(HTML(value_to_print))`
-			default is  `None` - `print(value_to_print)`
-			
+		mode (str, optional): Defaults to None.
+			Accepts either `DISPLAY` or `HTML`
+	
     """
 	
 	if(mode == __DISPLAY):
@@ -217,14 +216,17 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 			group counts for each column
 	
 	Example:
-		`object_cat_cols, numeric_cat_cols, numeric_cols = utils.columns_info(`
-			`data, cat_count_threshold=5, show_group_counts = True)`
+		
+		>>> object_cat_cols, numeric_cat_cols, numeric_cols = 
+		>>>	utils.columns_info(data, 
+		>>>						cat_count_threshold=5, 
+		>>>						show_group_counts = True)
 	
     """
 	
 	if(cat_count_threshold is None):
 		cat_count_threshold = 10
-		
+	
 	all_columns = df.columns
 	numeric_cat_columns = sorted(df._get_numeric_data().columns) 
 	# https://stackoverflow.com/questions/29803093/
@@ -254,7 +256,7 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 			selected_object_cat_columns.append(object_column)
 		else:
 			object_columns_not_identified_as_category.append(object_column)
-		
+	
 	if(kount > 0):
 		print_func(to_print.format(kount))
 		print_func(selected_object_cat_columns)
@@ -270,7 +272,7 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 		print_func(object_columns_not_identified_as_category)
 		print_new_line()
 		print_separator()
-		
+	
 	kount = 0
 	selected_numeric_cat_columns = []
 	numeric_columns = []
@@ -279,14 +281,15 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 	for numeric_column in numeric_cat_columns:
 		if(df[numeric_column].unique().shape[0] <= cat_count_threshold):
 			if(show_group_counts):
-				to_print_detail = to_print_detail + str(df.groupby(numeric_column)[numeric_column].count())
+				to_print_detail = (to_print_detail + 
+					str(df.groupby(numeric_column)[numeric_column].count()) )
 				to_print_detail = ( to_print_detail + "\n" + 
 									"\n" + __line_to_print + "\n\n" )
 			kount += 1
 			selected_numeric_cat_columns.append(numeric_column)
 		else:
 			numeric_columns.append(numeric_column)
-			
+	
 	if(kount > 0):
 		print_func(to_print.format(kount))
 		print_func(selected_numeric_cat_columns)
@@ -381,6 +384,7 @@ def count_plots(df, columns, **kwargs):
 	columns = pd.Series(columns)
 	
 	i = 0
+	plt.ion()
 	columns = columns[~columns.isin([hue_column, split_plots_by])]
 	for each_col in columns:
 		order=df.groupby(each_col)
@@ -392,7 +396,7 @@ def count_plots(df, columns, **kwargs):
 						height=height, aspect=aspect )
 			
 		g.set_xticklabels(rotation=40)
-		plt.show()
+		plt.show(block=False)
 		print_new_line()
 		# display(HTML("<input type='checkbox' id='" + each_col + 
 		# "' value='" + each_col + "'>" + each_col + "<br />"))
@@ -428,7 +432,11 @@ def count_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 	
     """
 	
-	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	(hue_column, 
+	split_plots_by, 
+	height, 
+	aspect, 
+	kde) = __get_plot_attrs(**kwargs)
 	
 	print_func("Count Plot for: " + str(column))
 	
@@ -456,20 +464,21 @@ def dist_plots(df, columns, **kwargs):
 	"""Dist Plots using seaborn
 	
     Args:
-        df (pd.DataFrame): DataFrame
-        columns (array-like): Columns for which count plot has to be shown
-		kwargs (dict of str): Keyword Args
-			
-	Keyword Args:
-        hue_column (str): Color
+        df (DataFrame): Pandas DataFrame.
+        columns ([str]): Plot only for selected columns.
+        **kwargs: Keyword arguments.
+	
+	KeywordArgs:
+		hue_column (str): Color
 		split_plots_by (str): Split seaborn facetgrid by column such as Gender
 		height (float): Sets the height of plot
 		aspect (float): Determines the width of the plot based on height
-	
+		
 	Example:
-		`utils.dist_plots(data, numeric_cols, height=4, aspect=1.5, `
-			`hue_column='class', kde=False)`
-	
+		>>> utils.dist_plots(data, numeric_cols, height=4, aspect=1.5,
+		>>>  hue_column=\'class\', kde=False)
+		
+	Returns: Nothing
     """
 	
 	kwargs['kde']=False
@@ -480,16 +489,19 @@ def kde_plots(df, columns, **kwargs):
 	"""KDE Plots using seaborn
 	
     Args:
-        df (pd.DataFrame): DataFrame
-        columns (array-like): Columns for which count plot has to be shown
-		kwargs (dict of str): hue_column (for color)
-			split_plots_by (split seaborn FacetGrid by column, ex: Gender)
-			height (sets the height of plot)
-			aspect (determines the widht of the plot based on height)
-	
+        df (DataFrame): DataFrame
+        columns ([str]): Plot only for selected columns.
+        **kwargs: Keyword arguments.
+		
+	KeywordArgs:
+		hue_column: for color coding
+		split_plots_by: split seaborn FacetGrid by column, example: Gender
+		height: sets the height of plot
+		aspect: determines the widht of the plot based on height
+		
 	Example:
-		`utils.kde_plots(data, numeric_cols, height=4, aspect=1.5, 
-			hue_column='class')`
+		>>> utils.kde_plots(data, numeric_cols, height=4, aspect=1.5, 
+		>>>  hue_column='class')
 		
     """
 	
@@ -545,7 +557,11 @@ def kde_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 		
     """
 	
-	hue_column, split_plots_by, height, aspect = __get_plot_attrs(**kwargs)
+	(hue_column, 
+	split_plots_by, 
+	height, 
+	aspect, 
+	kde) = __get_plot_attrs(**kwargs)
 	
 	print_func("Count Plot for: " + str(column))
 	
@@ -771,54 +787,55 @@ def do_feature_selection(X, y, method):
 	
 	print_separator()
 
-
 def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 	"""Cross Validate (sklearn)
-
+	
     Args:
-        
+	
 	Example:
-		cv_iterator = ShuffleSplit(n_splits=2, test_size=0.2, random_state=31)
-		cv_results = utils.do_cross_validate(X_train, 
-			y_train, 
-			'Classification', 
-			'DecisionTreeClassifier', 
-			cv=cv_iterator, 
-			kernel='rbf', 
-			C=1, 
-			gamma=0.01)
+		>>> cv_iterator = ShuffleSplit(n_splits=2, test_size=0.2, random_state=31)
+		>>> cv_results = utils.do_cross_validate(X_train, 
+		>>> 	y_train, 
+		>>> 	'Classification', 
+		>>> 	'DecisionTreeClassifier', 
+		>>> 	cv=cv_iterator, 
+		>>> 	kernel='rbf', 
+		>>> 	C=1, 
+		>>> 	gamma=0.01)
 	
     """
 	
 	estimator_name = estimator
 	if(estimator == 'LinearRegression'):
-			estimator = LinearRegression()
+		estimator = LinearRegression()
 	elif(estimator == 'LinearSVR'):
-			estimator = LinearSVR()
+		estimator = LinearSVR()
 	elif(estimator == 'SVR'):
-			estimator = SVR()
+		estimator = SVR()
 	elif(estimator == 'LDA'):
-			estimator = LinearDiscriminantAnalysis()
+		estimator = LinearDiscriminantAnalysis()
 	elif(estimator == 'SVC'):
-			estimator = SVC(kernel=kwargs['kernel'], 
-				C=kwargs['C'], gamma=kwargs['gamma'])
+		estimator = SVC(kernel=kwargs['kernel'], 
+			C=kwargs['C'], gamma=kwargs['gamma'])
 	elif(estimator == 'DecisionTreeClassifier'):
-			estimator = DecisionTreeClassifier()
+		estimator = DecisionTreeClassifier()
 	elif(estimator == 'RandomForestClassifier'):
-			estimator = RandomForestClassifier(
-				n_estimators=kwargs['n_estimators'], 
-				max_features=kwargs['max_features'], 
-				criterion=kwargs['criterion'])
+		estimator = RandomForestClassifier(
+			n_estimators=kwargs['n_estimators'], 
+			max_features=kwargs['max_features'], 
+			criterion=kwargs['criterion'])
 	elif(estimator == 'GradientBoostingClassifier'):
-			estimator = GradientBoostingClassifier( 
-				n_estimators=int(kwargs['n_estimators']), 
-				learning_rate=kwargs['learning_rate'], 
-				max_depth=kwargs['max_depth'], 
-				random_state=int(kwargs['random_state']) )
+		estimator = GradientBoostingClassifier( 
+			n_estimators=int(kwargs['n_estimators']), 
+			learning_rate=kwargs['learning_rate'], 
+			max_depth=kwargs['max_depth'], 
+			random_state=int(kwargs['random_state']) )
 	elif(estimator == 'LogisticRegression'):
-			estimator = LogisticRegression()
+		estimator = LogisticRegression(
+			solver=kwargs['solver'],
+			max_iter=kwargs['max_iter'])
 	else:
-			estimator = None
+		estimator = None
 	
 	if(estimator is None):
 		print("Estimator name not specified")
@@ -911,7 +928,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		bst_trn_prec_index = np.argmax(cv_res['train_precision'])
 		
 		bst_trn_prec = cv_res['train_precision'][bst_trn_prec_index]
-		tst_prec_for_bst_trn_prec = cv_res['test_precision'][bst_trn_prec_index]
+		tst_prec_for_bst_trn_prec=cv_res['test_precision'][bst_trn_prec_index]
 		
 		trn_acc_for_bst_trn_prec = cv_res['train_accuracy'][bst_trn_prec_index]
 		tst_acc_for_bst_trn_prec = cv_res['test_precision'][bst_trn_prec_index]
@@ -927,7 +944,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		bst_tst_prec_index = np.argmax(cv_res['test_precision'])
 		
 		bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
-		trn_prec_for_bst_tst_prec = cv_res['train_precision'][bst_tst_prec_index]
+		trn_prec_for_bst_tst_prec=cv_res['train_precision'][bst_tst_prec_index]
 		
 		trn_acc_for_bst_tst_prec = cv_res['train_accuracy'][bst_tst_prec_index]
 		tst_acc_for_bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
@@ -980,7 +997,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		trn_rec_for_bst_trn_roc = cv_res['train_recall'][bst_trn_roc_index]
 		tst_rec_for_bst_trn_roc = cv_res['test_recall'][bst_trn_roc_index]
 		
-		trn_prec_for_bst_trn_roc = cv_res['train_precision'][bst_trn_roc_index]
+		trn_prec_for_bst_trn_roc=cv_res['train_precision'][bst_trn_roc_index]
 		tst_prec_for_bst_trn_roc = cv_res['test_precision'][bst_trn_roc_index]
 		
 		trn_acc_for_bst_trn_roc = cv_res['train_accuracy'][bst_trn_roc_index]
@@ -993,7 +1010,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		bst_tst_roc = cv_res['test_roc'][bst_tst_roc_index]
 		trn_roc_for_bst_tst_roc = cv_res['train_roc'][bst_tst_roc_index]
 		
-		trn_prec_for_bst_tst_roc = cv_res['train_precision'][bst_tst_roc_index]
+		trn_prec_for_bst_tst_roc=cv_res['train_precision'][bst_tst_roc_index]
 		tst_prec_for_bst_tst_roc = cv_res['test_precision'][bst_tst_roc_index]
 		
 		trn_acc_for_bst_tst_roc = cv_res['train_accuracy'][bst_tst_roc_index]
@@ -1063,7 +1080,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		df = pd.DataFrame(d, index = indices, columns = columns)
 		
 		print_func("-> " + estimator_name + " scores") 
-		print_func(df) # to format output similar to Jupyter's output
+		print_func(df, mode=__DISPLAY) # to format output similar to Jupyter's output
 		
 		# print(cv_res.keys())
 	else:
@@ -1146,80 +1163,6 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator,
 	Z = Z.reshape(xx.shape)
 	plt.contour(xx, yy, Z, cmap=plt.cm.Paired)
 
-# https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
-# def plot_roc_curve(estimator, X_train, X_test, y_train, y_test, classes, is_for_outlier_detection=False):
-	# """Summary line.
-
-    # Extended description of function.
-
-    # Args:
-        
-		
-    # """
-	
-	# num_of_classes = len(classes)
-	# if(num_of_classes < 2):
-		# print("Number of classes have to be greater than or equal to 2")
-		# return None
-	
-	# # typical classes are 0,1 or -1, 1 in two class responses. 
-	# # if not then will this work?
-	# if(num_of_classes == 2):
-		# classifier = OneVsRestClassifier(estimator)
-		# if(is_for_outlier_detection):
-			# y_pred = estimator.fit(X_train).predict(X_test)
-		# else:
-			# y_pred = classifier.fit(X_train, y_train).predict(X_test)
-		# fpr, tpr, thresholds = roc_curve(y_test, y_pred)
-		# roc_auc = roc_auc_score(y_test, y_pred)
-		# lw = 2
-		# plt.figure(figsize=(12,6))
-		# plt.plot(fpr, tpr, lw=2)
-		
-		# # random predictions curve
-		# plt.plot([0, 1], [0, 1], linestyle='--', lw=lw)
-		
-		# plt.xlim([-0.001, 1.0])
-		# plt.ylim([0.0, 1.05])
-		# plt.xlabel('False Positive Rate')
-		# plt.ylabel('True Positive Rate')
-		# plt.title('Receiver Operating Characteristic (area = %0.3f)' %roc_auc)
-		# return fpr, tpr, roc_auc
-
-	# # when number of classes is more than 2 then
-	
-	# # Binarize the output
-	
-	# # converts 3 classes in one column to 3 columns binary matrix
-	# y_test = label_binarize(y_test, classes=classes)
-	
-	# num_of_classes = y_test.shape[1]
-
-	# # Learn to predict each class against the other
-	# classifier = OneVsRestClassifier(estimator)
-	
-	# # as of now found that SVM only has the decision_function implemented
-	# if hasattr(classifier, "decision_function"):
-		# y_pred = classifier.fit(X_train, y_train).decision_function(X_test)
-	# else:
-		# y_pred = classifier.fit(X_train, y_train).predict_proba(X_test)
-	
-	# # Compute ROC curve and ROC area for each class
-	# fpr = dict()
-	# tpr = dict()
-	# roc_auc = dict()
-	# for i in range(num_of_classes):
-		# fpr[i], tpr[i], _ = roc_curve(y_test[:, i], y_pred[:, i])
-		# roc_auc[i] = auc(fpr[i], tpr[i])
-
-	# # Compute micro-average ROC curve and ROC area
-	# fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_pred.ravel())
-	# roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
-	
-	# plot_roc_curve_multiclass(fpr, tpr, roc_auc, classes)
-	
-	# return fpr, tpr, roc_auc
-
 def plot_roc_curve_binary_class(y_true, y_pred):
 	"""Summary line.
 
@@ -1288,7 +1231,8 @@ def plot_roc_curve_multiclass(estimator, X_train, X_test, y_train, y_test):
 		roc_auc[i] = auc(fpr[i], tpr[i])
 
 	# Compute micro-average ROC curve and ROC area
-	fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), y_test_pred.ravel())
+	fpr["micro"], tpr["micro"], _ = roc_curve(y_test.ravel(), 
+												y_test_pred.ravel())
 	roc_auc["micro"] = auc(fpr["micro"], tpr["micro"])
 	
 	# First aggregate all false positive rates
@@ -1431,7 +1375,37 @@ def do_outlier_detection(df, target_column, outlier_classes,
 								predictor_columns[0],
 								predictor_columns[1])
 		return classifier
-	elif(method=='IsolationForest'):
+	elif(method == 'EllipticEnvelope'):
+		print_func("-> Using " + method +" for Outlier Detection")
+		print_new_line()
+		inliers, outliers = __get_inlier_outlier_info__(df, target_column)
+		
+		X, y = get_X_and_y(df, target_column)
+		y_true = y
+		
+		classifier = EllipticEnvelope(contamination=kwargs['contamination'])
+		classifier.fit(X)
+		y_pred = classifier.predict(X)
+		
+		print_func("-> Predict on Entire Data")
+		print_confusion_matrix(y_true, y_pred)
+		print_separator()
+		
+		print_func("-> Classification Report after Predict on Entire Data\n")
+		print_func(
+				classification_report(
+							y_true, y_pred, labels=unique_classes))
+		print_separator()
+		
+		if(len(predictor_columns) == 2):
+			print_func("-> Decision Boundary (Entire Data)")
+			plot_decision_boundary(X[predictor_columns[0]], 
+									X[predictor_columns[1]], 
+									y, classifier, 
+									predictor_columns[0],
+									predictor_columns[1])
+		return classifier
+	elif(method == 'IsolationForest'):
 		print_func("-> Using " + method +" for Outlier Detection")
 		print_new_line()
 		inliers, outliers = __get_inlier_outlier_info__(df, target_column)
@@ -1463,7 +1437,7 @@ def do_outlier_detection(df, target_column, outlier_classes,
 									predictor_columns[0],
 									predictor_columns[1])
 		return classifier
-	elif(method=='LocalOutlierFactor'):
+	elif(method == 'LocalOutlierFactor'):
 		print_func("-> Using " + method +" for Outlier Detection")
 		print_new_line()
 		inliers, outliers = __get_inlier_outlier_info__(df, target_column)
@@ -1573,7 +1547,8 @@ def do_outlier_detection(df, target_column, outlier_classes,
 		legend = plt.legend(loc='upper left')
 		plt.show()
 		
-		# for index, row in X_outliers_df[X_outliers_df[predictor_columns[0]]> 20].iterrows():
+		# for index, row in 
+		# X_outliers_df[X_outliers_df[predictor_columns[0]]> 20].iterrows():
 			# print("\n--")
 			# print(index)
 			# print(row)
@@ -1622,3 +1597,13 @@ def do_outlier_detection(df, target_column, outlier_classes,
 		plt.show()
 		
 		return classifier
+
+# def build_sup_model(X, y, algorithm, cv, **kwargs):
+	# """Build a model 
+
+    # Args:
+        
+	# Example:
+		
+	
+    # """

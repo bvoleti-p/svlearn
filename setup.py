@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="svlearn",
-    version="0.0.3.dev2",
+    version="0.0.3.dev5",
     author="bvoleti-p",
     author_email="",
     description="Utils for ML",
@@ -20,11 +20,11 @@ setuptools.setup(
     # packages=setuptools.find_packages(),
 	packages=['svlearn'],
     classifiers=[
-        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 2.7",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.6',
+    python_requires='>=2.7',
 	# py_modules=["utils"],
 	install_requires=[
 		'markdown',
