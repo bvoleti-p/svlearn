@@ -10,7 +10,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="svlearn",
-    version="0.0.3.dev6",
+    version="0.0.3.dev7",
     author="bvoleti-p",
     author_email="",
     description="Utils for ML",

@@ -91,13 +91,13 @@ __line_to_print = "________________________________________"
 
 def print_func(value_to_print, mode=None):
 	"""Display or Print an object or string
-	
+
 	Args:
 		value_to_print (Union[str, object]): Value to print
-		mode (str, optional): Defaults to None.
+		mode (optional[str]): Defaults to None.
 			Accepts either `DISPLAY` or `HTML`
-	
-    """
+
+	"""
 	
 	if(mode == __DISPLAY):
 		display(value_to_print)
@@ -108,29 +108,29 @@ def print_func(value_to_print, mode=None):
 
 def print_separator():
 	"""Prints a separator line using 80 underscores
-	
-    """
-	
+
+	"""
+
 	print_func(__line_to_print + __line_to_print)
 
 def print_new_line():
 	"""Prints a new line
-	
-    """
-	
+
+	"""
+
 	print_func("")
 
 def get_dataframe_from_array(data_array, columns):
 	"""Convert ndarray to pd.DataFrame for the given list of columns
-	
-    Args:
+
+	Args:
 		data_array (ndarray): Array to convert to pd.DataFrame
 		columns (Union[array-like]): Column Names for the pd.DataFrame
-	
-    Returns:
+
+	Returns:
 		pd.DataFrame
-		
-    """
+
+	"""
 	
 	df = pd.DataFrame(data_array, columns=columns)
 	print_func("-> Loaded dataframe of shape " + str(df.shape))
@@ -139,11 +139,11 @@ def get_dataframe_from_array(data_array, columns):
 
 def about_dataframe(df):
 	"""Describe DataFrame and show it's information
-	
-    Args:
-		df (pd.DataFrame): DataFrame to describe and info
-		
-    """
+
+	Args:
+		df (DataFrame): Pandas DataFrame to describe and info
+
+	"""
 	
 	print_func("-> Data Describe\n")
 	print_func(df.describe(include = "all").transpose(), mode=__DISPLAY)
@@ -156,11 +156,11 @@ def about_dataframe(df):
 	
 def null_values_info(df):
 	"""Show null value information of a DataFrame
-	
-    Args:
-		df (pd.DataFrame): DataFrame for which null values should be displayed
-		
-    """
+
+	Args:
+		df (DataFrame): Pandas DataFrame for which null values should be displayed
+
+	"""
 	
 	df = df.copy()
 	kount_of_null_values = df.isnull().sum().sum()
@@ -188,15 +188,15 @@ def null_values_info(df):
 
 def fill_null_values(df, column, value, row_index):
 	"""Fill null values in a dataframe column
-	
-    Args:
-		df (pd.DataFrame): DataFrame that will be updated
+
+	Args:
+		df (DataFrame): Pandas DataFrame that will be updated
 		column (str): Column in the target dataframe that will be updated
 		value: (Union[int, str, object]): New value that will replace 
 			null values
 		row_index (Union[Index, array-like]): Index of rows to be updated
-		
-    """
+
+	"""
 	
 	num_of_rows = row_index.shape[0]
 	
@@ -206,23 +206,25 @@ def fill_null_values(df, column, value, row_index):
 
 def columns_info(df, cat_count_threshold, show_group_counts=False):
 	"""Prints and returns column info for a given dataframe
-	
-    Args:
-		df (pd.DataFrame): DataFrame
+
+	Args:
+		df (DataFrame): Pandas DataFrame
 		cat_count_threshold (int): If a column in the dataframe 
 			has unique value count less than this threshold then it 
 			will be tagged as 'categorical'
 		show_group_counts (boolean): If True then prints the individual 
 			group counts for each column
-	
+
 	Example:
-		
-		>>> object_cat_cols, numeric_cat_cols, numeric_cols = 
-		>>>	utils.columns_info(data, 
-		>>>						cat_count_threshold=5, 
-		>>>						show_group_counts = True)
-	
-    """
+
+		>>> object_cat_cols, 
+		>>>    numeric_cat_cols,
+		>>>    numeric_cols = 
+		>>>        utils.columns_info(data, 
+		>>>                            cat_count_threshold=5, 
+		>>>                            show_group_counts = True)
+
+	"""
 	
 	if(cat_count_threshold is None):
 		cat_count_threshold = 10
@@ -311,16 +313,16 @@ def columns_info(df, cat_count_threshold, show_group_counts=False):
 
 def get_X_and_y(df, y_column):
 	"""Splits pd.dataframe into X (predictors) and y (response)
-	
-    Args:
-		df (pd.DataFrame): DataFrame
+
+	Args:
+		df (DataFrame): Pandas DataFrame
 		y_column (str): The response column name
-	
-    Returns:
-		X (pd.DataFrame): All columns except the response will be in X
-		y (pd.Series): Only the response column from dataframe
-		
-    """
+
+	Returns:
+		X (DataFrame): All columns except the response will be in X
+		y (Series): Only the response column from dataframe
+
+	"""
 	
 	X = df[[i for i in list(df.columns) if i != y_column]]
 	y = df[y_column]
@@ -357,23 +359,25 @@ def __get_plot_attrs(**kwargs):
 def count_plots(df, columns, **kwargs):
 	"""Count Plots using seaborn
 
-    Display Count plots for the given columns in a DataFrame
+	Display Count plots for the given columns in a DataFrame
 
-    Args:
-        df (pd.DataFrame): DataFrame
-        columns (array-like): Columns for which count plot has to be shown
-		kwargs (dict of str): Keyword Args
-			
-	Keyword Args:
-        hue_column (str): Color
+	Args:
+		df (DataFrame): Pandas DataFrame
+		columns (array-like): Columns for which count plot has to be shown
+		kwargs (array[str]): Keyword Args
+
+	KeywordArgs:
+		hue_column (str): Color
 		split_plots_by (str): Split seaborn facetgrid by column such as Gender
+
 		height (float): Sets the height of plot
+
 		aspect (float): Determines the width of the plot based on height
-	
+
 	Example:
-		`utils.count_plots(data, object_cat_cols, height=4, aspect=1.5)`
-		
-    """
+		>>> utils.count_plots(data, object_cat_cols, height=4, aspect=1.5)
+
+	"""
 	
 	(hue_column, 
 	split_plots_by, 
@@ -404,33 +408,33 @@ def count_plots(df, columns, **kwargs):
 
 def count_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 	"""Show Count Plots of two DataFrames for comparision
-	
+
 	Can be used to compare how Fill NA affects the distribution of a column
 
-    Args:
-        
-	
+	Args:
+		
+
 	Example:
 		The below example uses nhanes dataset.
-		
+
 		>>> for each_column in object_cat_columns:
-				data[each_column] = data[each_column].fillna(
-					data.groupby(['Gender'])[each_column].ffill())
+		>>>    data[each_column] = data[each_column].fillna(
+		>>>    data.groupby(['Gender'])[each_column].ffill())
 		>>> for each_column in object_cat_columns:
-		>>> 	str_count_of_nas = str(len(
-					data_raw.index[data_raw.isnull()[each_column]]))
-		>>> 	str_count_of_nas = ' (Count of NAs:' + str_count_of_nas + ')'
-		>>> 	utils.count_compare_plots(df1=data_raw, 
-				df1_title='Before Fill-NA' + str_count_of_nas, 
-					df2=data, 
-					df2_title='After Fill-NA', 
-					column=each_column, 
-					height=4, 
-					aspect=1.5, 
-					hue_column='Diabetes', 
-					split_plots_by='Gender')
-	
-    """
+		>>>    str_count_of_nas = str(len(
+		>>>        data_raw.index[data_raw.isnull()[each_column]]))
+		>>>    str_count_of_nas = ' (Count of NAs:' + str_count_of_nas + ')'
+		>>>    utils.count_compare_plots(df1=data_raw, 
+		>>>    df1_title='Before Fill-NA' + str_count_of_nas, 
+		>>>            df2=data, 
+		>>>            df2_title='After Fill-NA', 
+		>>>            column=each_column, 
+		>>>            height=4, 
+		>>>            aspect=1.5, 
+		>>>            hue_column='Diabetes', 
+		>>>            split_plots_by='Gender')
+
+	"""
 	
 	(hue_column, 
 	split_plots_by, 
@@ -462,24 +466,24 @@ def count_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 
 def dist_plots(df, columns, **kwargs):
 	"""Dist Plots using seaborn
-	
-    Args:
-        df (DataFrame): Pandas DataFrame.
-        columns ([str]): Plot only for selected columns.
-        **kwargs: Keyword arguments.
-	
-	KeywordArgs:
+
+	Args:
+		df (DataFrame): Pandas DataFrame.
+		columns ([str]): Plot only for selected columns.
+		**kwargs: Keyword arguments.
+
+	Keyword Args:
 		hue_column (str): Color
 		split_plots_by (str): Split seaborn facetgrid by column such as Gender
 		height (float): Sets the height of plot
 		aspect (float): Determines the width of the plot based on height
-		
+
 	Example:
 		>>> utils.dist_plots(data, numeric_cols, height=4, aspect=1.5,
-		>>>  hue_column=\'class\', kde=False)
-		
+		>>>    hue_column='class', kde=False)
+
 	Returns: Nothing
-    """
+	"""
 	
 	kwargs['kde']=False
 	
@@ -487,23 +491,23 @@ def dist_plots(df, columns, **kwargs):
 
 def kde_plots(df, columns, **kwargs):
 	"""KDE Plots using seaborn
-	
-    Args:
-        df (DataFrame): DataFrame
-        columns ([str]): Plot only for selected columns.
-        **kwargs: Keyword arguments.
-		
-	KeywordArgs:
+
+	Args:
+		df (DataFrame): DataFrame
+		columns ([str]): Plot only for selected columns.
+		**kwargs: Keyword arguments.
+
+	Keyword Args:
 		hue_column: for color coding
 		split_plots_by: split seaborn FacetGrid by column, example: Gender
 		height: sets the height of plot
 		aspect: determines the widht of the plot based on height
-		
+
 	Example:
 		>>> utils.kde_plots(data, numeric_cols, height=4, aspect=1.5, 
-		>>>  hue_column='class')
-		
-    """
+		>>>    hue_column='class')
+
+	"""
 	
 	(hue_column, 
 	split_plots_by, 
@@ -550,12 +554,12 @@ def kde_plots(df, columns, **kwargs):
 def kde_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 	"""Summary line.
 
-    Extended description of function.
+	Extended description of function.
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	(hue_column, 
 	split_plots_by, 
@@ -601,12 +605,12 @@ def kde_compare_plots(df1, df1_title, df2, df2_title, column, **kwargs):
 def encode_columns(df, method, columns = []):
 	"""Summary line.
 
-    Extended description of function.
+	Extended description of function.
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	kount = 0
 	df = df.copy()
@@ -658,16 +662,16 @@ def encode_columns(df, method, columns = []):
 def do_scaling(df, method, columns_to_scale=[]):
 	"""Scale data using the specified method
 
-    Columns specified in the arguments will be scaled
+	Columns specified in the arguments will be scaled
 
-    Args:
-        df (pd.DataFrame): DataFrame
+	Args:
+		df (DataFrame): Pandas DataFrame
 		columns (array-like): List of columns that will be scaled
-		
+
 	Returns:
-		df (pd.DataFrame)
-	
-    """
+		df (DataFrame)
+
+	"""
 	
 	if(method == 'StandardScaler'):
 		scaler = StandardScaler()
@@ -687,12 +691,12 @@ def do_scaling(df, method, columns_to_scale=[]):
 def do_feature_selection(X, y, method):
 	"""Summary line.
 
-    Extended description of function.
+	Extended description of function.
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	if(method == 'f_regression'):
 		skbest = SelectKBest(f_regression, k=X.shape[1]).fit(X,y)
@@ -789,21 +793,21 @@ def do_feature_selection(X, y, method):
 
 def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 	"""Cross Validate (sklearn)
-	
-    Args:
-	
+
+	Args:
+
 	Example:
 		>>> cv_iterator = ShuffleSplit(n_splits=2, test_size=0.2, random_state=31)
 		>>> cv_results = utils.do_cross_validate(X_train, 
-		>>> 	y_train, 
-		>>> 	'Classification', 
-		>>> 	'DecisionTreeClassifier', 
-		>>> 	cv=cv_iterator, 
-		>>> 	kernel='rbf', 
-		>>> 	C=1, 
-		>>> 	gamma=0.01)
-	
-    """
+		>>>    y_train, 
+		>>>    'Classification', 
+		>>>    'DecisionTreeClassifier', 
+		>>>    cv=cv_iterator, 
+		>>>    kernel='rbf', 
+		>>>    C=1, 
+		>>>    gamma=0.01)
+
+	"""
 	
 	estimator_name = estimator
 	if(estimator == 'LinearRegression'):
@@ -1095,12 +1099,12 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 
 def print_confusion_matrix(y_true, y_pred):
 	"""Prints the confision matrix with columns and index labels
-	
-    Args:
+
+	Args:
 		y_true (Union[ndarray, pd.Series]): Actual Response
 		y_pred (Union[ndarray, pd.Series]): Predicted Response
-		
-    """
+
+	"""
 	
 	unique_classes = np.unique(y_true)
 	unique_classes = sorted(unique_classes)
@@ -1135,12 +1139,12 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator,
 							x_axis_column = None, y_axis_column = None):
 	"""Plots the decision boundary
 
-    
+	
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	plt.figure(figsize=(12,6))
 	plt.scatter( x_axis_data, y_axis_data, c=response, cmap=plt.cm.Paired )
@@ -1166,12 +1170,12 @@ def plot_decision_boundary(x_axis_data, y_axis_data, response, estimator,
 def plot_roc_curve_binary_class(y_true, y_pred):
 	"""Summary line.
 
-    Extended description of function.
+	Extended description of function.
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	num_of_classes = len(np.unique(y_true))
 	if(num_of_classes != 2):
@@ -1199,12 +1203,12 @@ def plot_roc_curve_binary_class(y_true, y_pred):
 def plot_roc_curve_multiclass(estimator, X_train, X_test, y_train, y_test):
 	"""Summary line.
 
-    Extended description of function.
+	Extended description of function.
 
-    Args:
-        
+	Args:
 		
-    """
+
+	"""
 	
 	# converts 3 classes in one column to 3 columns binary matrix
 	y_test = label_binarize(y_test, classes=classes)
@@ -1601,9 +1605,9 @@ def do_outlier_detection(df, target_column, outlier_classes,
 # def build_sup_model(X, y, algorithm, cv, **kwargs):
 	# """Build a model 
 
-    # Args:
-        
+	# Args:
+		
 	# Example:
 		
 	
-    # """
+	# """
