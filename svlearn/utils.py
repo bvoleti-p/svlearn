@@ -80,6 +80,8 @@ from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 from sklearn.covariance import EllipticEnvelope
 
+from itertools import cycle
+
 __HTML = 'HTML'
 __DISPLAY = 'DISPLAY'
 
@@ -684,7 +686,7 @@ def do_scaling(df, method, columns_to_scale=[]):
 	
 	return df_scaled
 		
-def do_feature_selection(X, y, method):
+def do_feature_selection(X, y, method, num_of_features=None):
 	"""Summary line.
 
 	Extended description of function.
@@ -694,8 +696,11 @@ def do_feature_selection(X, y, method):
 
 	"""
 	
+	if(num_of_features is None):
+		num_of_features = X.shape[1]
+	
 	if(method == 'f_regression'):
-		skbest = SelectKBest(f_regression, k=X.shape[1]).fit(X,y)
+		skbest = SelectKBest(f_regression, k=num_of_features).fit(X,y)
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
@@ -706,7 +711,7 @@ def do_feature_selection(X, y, method):
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		print_func(sf_df)
 	elif(method == 'mutual_info_regression'):
-		skbest = SelectKBest(mutual_info_regression, k=X.shape[1]).fit(X,y)
+		skbest = SelectKBest(mutual_info_regression, k=num_of_features).fit(X,y)
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
@@ -738,9 +743,9 @@ def do_feature_selection(X, y, method):
 			columns=['importance']).sort_values('importance', 
 				ascending=False)
 		print_func("-> Selected Features using Random Forest Regressor")
-		print_func(feature_importances)
+		print_func(feature_importances.head(num_of_features))
 	elif(method == 'f_classif'):
-		skbest = SelectKBest(f_classif, k=X.shape[1]).fit(X,y)
+		skbest = SelectKBest(f_classif, k=num_of_features).fit(X,y)
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
@@ -751,7 +756,7 @@ def do_feature_selection(X, y, method):
 		sf_df.sort_values('Score', ascending=False, inplace=True)
 		print_func(sf_df)
 	elif(method == 'mutual_info_classif'):
-		skbest = SelectKBest(mutual_info_classif, k=X.shape[1]).fit(X,y)
+		skbest = SelectKBest(mutual_info_classif, k=num_of_features).fit(X,y)
 		mask = skbest.get_support()
 		selected_features = X.columns[mask]
 
@@ -783,7 +788,7 @@ def do_feature_selection(X, y, method):
 			columns=['importance']).sort_values('importance', 
 				ascending=False)
 		print_func("-> Selected Features using Random Forest Classifier")
-		print_func(feature_importances)
+		print_func(feature_importances.head(num_of_features))
 	
 	print_separator()
 
@@ -843,7 +848,7 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 		return
 	
 	if(estimator_type == 'Regression'):
-		cv_res = cross_validate(estimator, 
+		cv_results = cross_validate(estimator, 
 			X, y, 
 			cv=cv, 
 			scoring=('r2', 'neg_mean_squared_error'), 
@@ -851,22 +856,22 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 			return_estimator=True)
 		
 		# train_r2		
-		bst_trn_r2_idx = np.argmax(cv_res['train_r2'])
-		bst_trn_r2 = cv_res['train_r2'][bst_trn_r2_idx]
-		bst_trn_estimator = cv_res['estimator'][bst_trn_r2_idx]
-		test_for_bst_trn_r2 = cv_res['test_r2'][bst_trn_r2_idx]
-		fit_time_for_bst_trn_r2 = cv_res['fit_time'][bst_trn_r2_idx]
-		score_time_for_bst_trn_r2 = cv_res['score_time'][bst_trn_r2_idx]
-		mean_train_r2_score = np.mean(cv_res['train_r2'])
+		bst_trn_r2_idx = np.argmax(cv_results['train_r2'])
+		bst_trn_r2 = cv_results['train_r2'][bst_trn_r2_idx]
+		bst_trn_estimator = cv_results['estimator'][bst_trn_r2_idx]
+		test_for_bst_trn_r2 = cv_results['test_r2'][bst_trn_r2_idx]
+		fit_time_for_bst_trn_r2 = cv_results['fit_time'][bst_trn_r2_idx]
+		score_time_for_bst_trn_r2 = cv_results['score_time'][bst_trn_r2_idx]
+		mean_train_r2_score = np.mean(cv_results['train_r2'])
 		
 		# test_r2
-		bst_tst_r2_idx = np.argmax(cv_res['test_r2'])
-		bst_tst_r2 = cv_res['test_r2'][bst_tst_r2_idx]
-		bst_tst_estimator = cv_res['estimator'][bst_tst_r2_idx]
-		trn_for_bst_tst_r2 = cv_res['train_r2'][bst_tst_r2_idx]
-		fit_time_for_bst_tst_r2 = cv_res['fit_time'][bst_tst_r2_idx]
-		score_time_for_bst_tst_r2 = cv_res['score_time'][bst_tst_r2_idx]
-		mean_test_r2_score = np.mean(cv_res['test_r2'])
+		bst_tst_r2_idx = np.argmax(cv_results['test_r2'])
+		bst_tst_r2 = cv_results['test_r2'][bst_tst_r2_idx]
+		bst_tst_estimator = cv_results['estimator'][bst_tst_r2_idx]
+		trn_for_bst_tst_r2 = cv_results['train_r2'][bst_tst_r2_idx]
+		fit_time_for_bst_tst_r2 = cv_results['fit_time'][bst_tst_r2_idx]
+		score_time_for_bst_tst_r2 = cv_results['score_time'][bst_tst_r2_idx]
+		mean_test_r2_score = np.mean(cv_results['test_r2'])
 		
 		print("-> " + estimator_name + " scores\n");
 		print("-> Mean Train R2 Score: %0.4f\n" %(mean_train_r2_score))
@@ -886,212 +891,56 @@ def do_cross_validate(X, y, estimator_type, estimator, cv, **kwargs):
 				   'recall': make_scorer(recall_score, average='macro'),
 				   'roc': make_scorer(recall_score, average='macro')
 				  }
-		cv_res = cross_validate(estimator, 
+		cv_results = cross_validate(estimator, 
 			X, y, 
 			cv=cv, 
 			scoring=scoring, 
 			return_train_score=True,
 			return_estimator=True)
 		
-		# best trn_acc
-		bst_trn_acc_index = np.argmax(cv_res['train_accuracy'])
+		columns = []
 		
-		bst_trn_acc = cv_res['train_accuracy'][bst_trn_acc_index]
-		tst_acc_for_bst_trn_acc = cv_res['test_accuracy'][bst_trn_acc_index]
-		
-		trn_prec_for_bst_trn_acc = cv_res['train_precision'][bst_trn_acc_index]
-		tst_prec_for_bst_trn_acc = cv_res['test_precision'][bst_trn_acc_index]
-		
-		trn_rec_for_bst_trn_acc = cv_res['train_recall'][bst_trn_acc_index]
-		tst_rec_for_bst_trn_acc = cv_res['test_recall'][bst_trn_acc_index]
-		
-		trn_roc_for_bst_trn_acc = cv_res['train_roc'][bst_trn_acc_index]
-		tst_roc_for_bst_trn_acc = cv_res['test_roc'][bst_trn_acc_index]
-		
-		# best tst_acc
-		bst_tst_acc_index = np.argmax(cv_res['test_accuracy'])
-		
-		bst_tst_acc = cv_res['test_accuracy'][bst_tst_acc_index]
-		trn_acc_for_bst_tst_acc = cv_res['train_accuracy'][bst_tst_acc_index]
-		
-		trn_prec_for_bst_tst_acc = cv_res['train_precision'][bst_tst_acc_index]
-		tst_prec_for_bst_tst_acc = cv_res['test_precision'][bst_tst_acc_index]
-		
-		trn_rec_for_bst_tst_acc = cv_res['train_recall'][bst_tst_acc_index]
-		tst_rec_for_bst_tst_acc = cv_res['test_recall'][bst_tst_acc_index]
-		
-		trn_roc_for_bst_tst_acc = cv_res['train_roc'][bst_tst_acc_index]
-		tst_roc_for_bst_tst_acc = cv_res['test_roc'][bst_tst_acc_index]
-		
-		
-		# best trn_prec
-		bst_trn_prec_index = np.argmax(cv_res['train_precision'])
-		
-		bst_trn_prec = cv_res['train_precision'][bst_trn_prec_index]
-		tst_prec_for_bst_trn_prec=cv_res['test_precision'][bst_trn_prec_index]
-		
-		trn_acc_for_bst_trn_prec = cv_res['train_accuracy'][bst_trn_prec_index]
-		tst_acc_for_bst_trn_prec = cv_res['test_precision'][bst_trn_prec_index]
-		
-		tst_rec_for_bst_trn_prec = cv_res['test_recall'][bst_trn_prec_index]
-		trn_rec_for_bst_trn_prec = cv_res['train_recall'][bst_trn_prec_index]
-		
-		trn_roc_for_bst_trn_prec = cv_res['train_roc'][bst_trn_prec_index]
-		tst_roc_for_bst_trn_prec = cv_res['test_roc'][bst_trn_prec_index]
-		
-		
-		# best tst_prec
-		bst_tst_prec_index = np.argmax(cv_res['test_precision'])
-		
-		bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
-		trn_prec_for_bst_tst_prec=cv_res['train_precision'][bst_tst_prec_index]
-		
-		trn_acc_for_bst_tst_prec = cv_res['train_accuracy'][bst_tst_prec_index]
-		tst_acc_for_bst_tst_prec = cv_res['test_precision'][bst_tst_prec_index]
-		
-		tst_rec_for_bst_tst_prec = cv_res['test_recall'][bst_tst_prec_index]
-		trn_rec_for_bst_tst_prec = cv_res['train_recall'][bst_tst_prec_index]
-		
-		trn_roc_for_bst_tst_prec = cv_res['train_roc'][bst_tst_prec_index]
-		tst_roc_for_bst_tst_prec = cv_res['test_roc'][bst_tst_prec_index]
-		
-		
-		# best trn_rec
-		bst_trn_rec_index = np.argmax(cv_res['train_recall'])
-		
-		bst_trn_rec = cv_res['train_recall'][bst_trn_rec_index]
-		tst_rec_for_bst_trn_rec = cv_res['test_recall'][bst_trn_rec_index]
-		
-		trn_prec_for_bst_trn_rec = cv_res['train_precision'][bst_trn_rec_index]
-		tst_prec_for_bst_trn_rec = cv_res['test_precision'][bst_trn_rec_index]
-		
-		trn_acc_for_bst_trn_rec = cv_res['train_accuracy'][bst_trn_rec_index]
-		tst_acc_for_bst_trn_rec = cv_res['test_precision'][bst_trn_rec_index]
-		
-		trn_roc_for_bst_trn_rec = cv_res['train_roc'][bst_trn_rec_index]
-		tst_roc_for_bst_trn_rec = cv_res['test_roc'][bst_trn_rec_index]
-		
-		
-		# best tst_rec
-		bst_tst_rec_index = np.argmax(cv_res['test_recall'])
-		
-		bst_tst_rec = cv_res['test_recall'][bst_tst_rec_index]
-		trn_rec_for_bst_tst_rec = cv_res['train_recall'][bst_tst_rec_index]
-		
-		trn_prec_for_bst_tst_rec = cv_res['train_precision'][bst_tst_rec_index]
-		tst_prec_for_bst_tst_rec = cv_res['test_precision'][bst_tst_rec_index]
-		
-		trn_acc_for_bst_tst_rec = cv_res['train_accuracy'][bst_tst_rec_index]
-		tst_acc_for_bst_tst_rec = cv_res['test_precision'][bst_tst_rec_index]
-		
-		trn_roc_for_bst_tst_rec = cv_res['train_roc'][bst_tst_rec_index]
-		tst_roc_for_bst_tst_rec = cv_res['test_roc'][bst_tst_rec_index]
-		
-		
-		# best trn_roc
-		bst_trn_roc_index = np.argmax(cv_res['train_roc'])
-		
-		bst_trn_roc = cv_res['train_roc'][bst_trn_roc_index]
-		tst_roc_for_bst_trn_roc = cv_res['test_roc'][bst_trn_roc_index]
-		
-		trn_rec_for_bst_trn_roc = cv_res['train_recall'][bst_trn_roc_index]
-		tst_rec_for_bst_trn_roc = cv_res['test_recall'][bst_trn_roc_index]
-		
-		trn_prec_for_bst_trn_roc=cv_res['train_precision'][bst_trn_roc_index]
-		tst_prec_for_bst_trn_roc = cv_res['test_precision'][bst_trn_roc_index]
-		
-		trn_acc_for_bst_trn_roc = cv_res['train_accuracy'][bst_trn_roc_index]
-		tst_acc_for_bst_trn_roc = cv_res['test_precision'][bst_trn_roc_index]
-		
-		
-		# best tst_roc
-		bst_tst_roc_index = np.argmax(cv_res['test_roc'])
-		
-		bst_tst_roc = cv_res['test_roc'][bst_tst_roc_index]
-		trn_roc_for_bst_tst_roc = cv_res['train_roc'][bst_tst_roc_index]
-		
-		trn_prec_for_bst_tst_roc=cv_res['train_precision'][bst_tst_roc_index]
-		tst_prec_for_bst_tst_roc = cv_res['test_precision'][bst_tst_roc_index]
-		
-		trn_acc_for_bst_tst_roc = cv_res['train_accuracy'][bst_tst_roc_index]
-		tst_acc_for_bst_tst_roc = cv_res['test_precision'][bst_tst_roc_index]
-		
-		trn_rec_for_bst_tst_roc = cv_res['train_recall'][bst_tst_roc_index]
-		tst_rec_for_bst_tst_roc = cv_res['test_recall'][bst_tst_roc_index]
-		
-		
-		indices = ['Train Accuracy', 'Test Accuracy', 
-			'Train Precision', 'Test Precision', 'Train Recall', 
-			'Test Recall', 'Train ROC', 'Test ROC']
-		columns = ['Index', 'Best', 'Train Accuracy', 
-			'Test Accuracy', 'Train Precision', 'Test Precision', 
-			'Train Recall', 'Test Recall', 'Train ROC', 'Test ROC']
-					
-		d = [
-			 [ bst_trn_acc_index, bst_trn_acc, 
-				bst_trn_acc, tst_acc_for_bst_trn_acc, 
-				trn_prec_for_bst_trn_acc, tst_prec_for_bst_trn_acc, 
-				trn_rec_for_bst_trn_acc, tst_rec_for_bst_trn_acc, 
-				trn_roc_for_bst_trn_acc, tst_roc_for_bst_trn_acc ],
-			 
-			 [ bst_tst_acc_index, bst_tst_acc, 
-				trn_acc_for_bst_tst_acc, bst_tst_acc, 
-				trn_prec_for_bst_tst_acc, tst_prec_for_bst_tst_acc, 
-				trn_rec_for_bst_tst_acc, tst_rec_for_bst_tst_acc, 
-				trn_roc_for_bst_tst_acc, tst_roc_for_bst_tst_acc ],
-			 
-			 [ bst_trn_prec_index, bst_trn_prec, 
-				trn_acc_for_bst_trn_prec, tst_acc_for_bst_trn_prec, 
-				bst_trn_prec, tst_prec_for_bst_trn_prec, 
-				trn_rec_for_bst_trn_prec, tst_rec_for_bst_trn_prec, 
-				trn_roc_for_bst_trn_prec, tst_roc_for_bst_trn_prec ],
-			 
-			 [ bst_tst_prec_index, bst_tst_prec, 
-				trn_acc_for_bst_tst_prec, tst_acc_for_bst_tst_prec, 
-				trn_prec_for_bst_tst_prec, bst_tst_prec, 
-				trn_rec_for_bst_tst_prec, tst_rec_for_bst_tst_prec, 
-				trn_roc_for_bst_tst_prec, tst_roc_for_bst_tst_prec ],
-			 
-			 [ bst_trn_rec_index, bst_trn_rec, 
-				trn_acc_for_bst_trn_rec, tst_acc_for_bst_trn_rec, 
-				trn_prec_for_bst_trn_rec, tst_prec_for_bst_trn_rec, 
-				bst_trn_rec, tst_rec_for_bst_trn_rec, 
-				trn_roc_for_bst_trn_rec, tst_roc_for_bst_trn_rec ],
-			 
-			 [ bst_tst_rec_index, bst_tst_rec, 
-				trn_acc_for_bst_tst_rec, tst_acc_for_bst_tst_rec, 
-				trn_prec_for_bst_tst_rec, tst_prec_for_bst_tst_rec, 
-				trn_rec_for_bst_tst_rec, bst_tst_rec, 
-				trn_roc_for_bst_tst_rec, tst_roc_for_bst_tst_rec ],
-				
-			 [ bst_trn_roc_index, bst_trn_roc, 
-				trn_acc_for_bst_trn_roc, tst_acc_for_bst_trn_roc, 
-				trn_prec_for_bst_trn_roc, tst_prec_for_bst_trn_roc, 
-				trn_rec_for_bst_trn_roc, tst_rec_for_bst_trn_roc, 
-				bst_trn_roc, tst_roc_for_bst_trn_roc ],
-			 
-			 [ bst_tst_roc_index, bst_tst_roc, 
-				trn_acc_for_bst_tst_roc, tst_acc_for_bst_tst_roc, 
-				trn_prec_for_bst_tst_roc, tst_prec_for_bst_tst_roc, 
-				trn_rec_for_bst_tst_roc, tst_rec_for_bst_tst_roc, 
-				trn_roc_for_bst_tst_roc, bst_tst_roc ],
+		for i in range((cv_results['train_accuracy']).size):
+			columns.append('Split ' + str(i))
+			
+		indices = [
+			'Test Accuracy', 
+			'Train Accuracy', 
+			'Test Precision', 
+			'Train Precision', 
+			'Test Recall', 
+			'Train Recall', 
+			'Test ROC', 
+			'Train ROC'
 			]
-		
+			
+		d = [
+			cv_results['test_accuracy'],
+			cv_results['train_accuracy'],
+			cv_results['test_precision'],
+			cv_results['train_precision'],
+			cv_results['test_recall'],
+			cv_results['train_recall'],
+			cv_results['test_roc'],
+			cv_results['train_roc']
+			]
+			
 		df = pd.DataFrame(d, index = indices, columns = columns)
 		
 		print_func("-> " + estimator_name + " scores") 
-		print_func(df, mode=__DISPLAY) # to format output similar to Jupyter's output
+		# to format output similar to Jupyter's output
+		print_func(df, mode=__DISPLAY)
 		
-		# print(cv_res.keys())
+		# print(cv_results.keys())
 	else:
 		print_func("Estimator Type not specificed")
 		print_separator()
 		return
 	
 	print_separator()
-	# print(cv_res.keys())
+	# print(cv_results.keys())
 	
-	return cv_res
+	return cv_results
 
 def print_confusion_matrix(y_true, y_pred):
 	"""Prints the confision matrix with columns and index labels
@@ -1196,7 +1045,7 @@ def plot_roc_curve_binary_class(y_true, y_pred):
 	return fpr, tpr, roc_auc
 
 # https://scikit-learn.org/stable/auto_examples/model_selection/plot_roc.html
-def plot_roc_curve_multiclass(estimator, X_train, X_test, y_train, y_test):
+def plot_roc_curve_multiclass(estimator, X_train, X_test, y_train, y_test, classes):
 	"""Summary line.
 
 	Extended description of function.
@@ -1469,7 +1318,7 @@ def do_outlier_detection(df, target_column, outlier_classes,
 			threshold_for_visualization = -2
 		else:
 			threshold_for_visualization = (
-					kwargs['threshold_for_visualization'] )
+				kwargs['threshold_for_visualization'] )
 		
 		print_func("--> Inliers tend to have a LOF score close to 1 " + 
 					" (negative_outlier_factor_ close to -1)")
